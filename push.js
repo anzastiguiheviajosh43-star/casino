@@ -19,8 +19,8 @@
     b.hidden = p==="granted" && localStorage.getItem("mc-push")==="on";
     b.textContent = "🔔 Activar avisos en este cel";
     n.textContent = p==="denied" ? "Bloqueaste los avisos. Actívalos en Ajustes → Notificaciones → Mesa de 4."
-      : (p==="granted" && localStorage.getItem("mc-push")==="on") ? "🔔 Avisos activados: te llega una notificación cuando alguien abra una mesa o te gane el puesto en el tablero."
-      : "Te avisamos cuando alguien abra una mesa o te gane el puesto en el tablero, aunque tengas la app cerrada.";
+      : (p==="granted" && localStorage.getItem("mc-push")==="on") ? "🔔 Avisos activados: te llega una notificación cuando alguien abra una mesa, se siente en la tuya o te gane el puesto en el tablero."
+      : "Te avisamos cuando alguien abra una mesa, se siente en la tuya o te gane el puesto en el tablero, aunque tengas la app cerrada.";
   }
 
   async function save(sub){
@@ -86,7 +86,26 @@
   function rankSoon(){ clearTimeout(rankT); const wait=Math.max(4000, 60000-(Date.now()-rankLast));
     rankT=setTimeout(async()=>{ rankLast=Date.now(); try{ const docs=(await ST.db.collection("mesas").limit(300).get()).docs.map(d=>d.data()); rankCheck(boardAgg(docs)); }catch(e){} }, wait); }
 
-  window.PUSH = { enable, touch, paint, mesaNueva, rankCheck, rankSoon };
+
+  // ---- 3) Alguien se sienta en una mesa que ya existía: avisa a los que están en ella
+  let joinT=null;
+  function joinSoon(){
+    const T0=ST.T; if(!T0) return; const code=T0.code||ST.code;
+    const had=!!(T0.players && T0.players[ST.uid] && !T0.players[ST.uid].out);
+    if(had) return;
+    clearTimeout(joinT);
+    joinT=setTimeout(()=>{
+      const T=ST.T; if(!T || (T.code||ST.code)!==code) return;
+      const p=T.players && T.players[ST.uid]; if(!p || p.out) return;          // no se pudo sentar
+      const me=getAlias(), key="mc-joinpush:"+code+":"+normName(me);
+      const last=+(localStorage.getItem(key)||0); if(Date.now()-last<10*60000) return;   // máximo un aviso cada 10 min
+      const others=new Set(Object.entries(T.players).filter(([id,x])=>id!==ST.uid && x && !x.bot && !x.out && normName(x.name)!==normName(me)).map(([,x])=>normName(x.name)));
+      if(!others.size) return;
+      localStorage.setItem(key, String(Date.now()));
+      send(n=>others.has(n), {title:"🪑 Llegó alguien a tu mesa", body:`${me} se sentó en “${T.name}” (${GNAME[T.game]||"casino"}). ¡A jugar!`, tag:"join-"+code});
+    }, 3000);
+  }
+  window.PUSH = { enable, touch, paint, mesaNueva, rankCheck, rankSoon, joinSoon };
   document.addEventListener("click", e=>{ if(e.target && e.target.id==="pushBtn") enable(); });
   const start=()=>{ paint(); const wait=setInterval(()=>{ if(ST.acct){ clearInterval(wait); touch(); } },500); };
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", start); else start();

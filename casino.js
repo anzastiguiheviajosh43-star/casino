@@ -874,7 +874,7 @@ function pushBets(immediate){
   const send=()=>{ if(ST.T) sendAct("bets",{game:ST.T.game,round:UI.round,bets:clone(UI.bets),ready:UI.ready}); };
   if(immediate) send(); else betTimer=setTimeout(send,250);
 }
-function sendAct(kind,data){ mesaDo(T=>hostAct(T,ST.uid,{kind,data},presentSet()), kind==="bets"?"bets":null); }
+function sendAct(kind,data){ if(kind==="join" && window.PUSH) PUSH.joinSoon(); mesaDo(T=>hostAct(T,ST.uid,{kind,data},presentSet()), kind==="bets"?"bets":null); }
 // Orden de llegada: decide quién empuja primero la mesa cuando algo toca (repartir, siguiente ronda, bots)
 const byJoin = T => (a,b)=>((T.players[a].joined||0)-(T.players[b].joined||0)) || ((T.players[a].seat||0)-(T.players[b].seat||0));
 setInterval(()=>{
@@ -1098,7 +1098,7 @@ function autoSeat(T){
   if(now()-(UI.joinAt||0)<2500) return;
   UI.joinAt=now(); sendAct("join",{name:getAlias()});
 }
-function takeBot(id){ const alias=getAlias(); mesaDo(T=>claimBot(T,id,ST.uid,alias)); }
+function takeBot(id){ const alias=getAlias(); if(window.PUSH) PUSH.joinSoon(); mesaDo(T=>claimBot(T,id,ST.uid,alias)); }
 function claimSeat(id){
   if(String(id).startsWith("bot:")){ takeBot(id.slice(4)); return; }
   if(id==="lobby"){ closeMesa(); $("alias").focus(); $("alias").select(); }
