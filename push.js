@@ -19,8 +19,8 @@
     b.hidden = p==="granted" && localStorage.getItem("mc-push")==="on";
     b.textContent = "🔔 Activar avisos en este cel";
     n.textContent = p==="denied" ? "Bloqueaste los avisos. Actívalos en Ajustes → Notificaciones → Mesa de 4."
-      : (p==="granted" && localStorage.getItem("mc-push")==="on") ? "🔔 Avisos activados: te llega una notificación cuando alguien abra una mesa, se siente en la tuya o te gane el puesto en el tablero."
-      : "Te avisamos cuando alguien abra una mesa, se siente en la tuya o te gane el puesto en el tablero, aunque tengas la app cerrada.";
+      : (p==="granted" && localStorage.getItem("mc-push")==="on") ? "🔔 Avisos activados: te llega una notificación cuando alguien abra una mesa, entre a una mesa o te gane el puesto en el tablero."
+      : "Te avisamos cuando alguien abra una mesa, entre a una mesa o te gane el puesto en el tablero, aunque tengas la app cerrada.";
   }
 
   async function save(sub){
@@ -100,9 +100,11 @@
       const me=getAlias(), key="mc-joinpush:"+code+":"+normName(me);
       const last=+(localStorage.getItem(key)||0); if(Date.now()-last<10*60000) return;   // máximo un aviso cada 10 min
       const others=new Set(Object.entries(T.players).filter(([id,x])=>id!==ST.uid && x && !x.bot && !x.out && normName(x.name)!==normName(me)).map(([,x])=>normName(x.name)));
-      if(!others.size) return;
       localStorage.setItem(key, String(Date.now()));
-      send(n=>others.has(n), {title:"🪑 Llegó alguien a tu mesa", body:`${me} se sentó en “${T.name}” (${GNAME[T.game]||"casino"}). ¡A jugar!`, tag:"join-"+code});
+      const meN=normName(me), where=`“${T.name}” (${GNAME[T.game]||"casino"})`;
+      // a los que están en esa mesa: "llegó alguien a tu mesa"; a todos los demás: "X entró a una mesa"
+      if(others.size) send(n=>others.has(n), {title:"🪑 Llegó alguien a tu mesa", body:`${me} se sentó en ${where}. ¡A jugar!`, tag:"join-"+code});
+      send(n=>n!==meN && !others.has(n), {title:`🪑 ${me} entró a una mesa`, body:`Se sentó en ${where}. Código ${code}`, tag:"join-"+code});
     }, 3000);
   }
   window.PUSH = { enable, touch, paint, mesaNueva, rankCheck, rankSoon, joinSoon };
