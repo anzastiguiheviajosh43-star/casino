@@ -560,7 +560,7 @@ function ckSet(k,v){ try{ document.cookie=k+"="+encodeURIComponent(v)+"; max-age
 let aliasT=null;
 function perfilRef(){ return APPMODE && ST.db && ST.acct ? ST.db.doc("data/users/"+ST.acct+"/perfil") : null; }
 function saveAlias(){ const a=getAlias(); if(!a) return; lsSet("mc-alias",a); ckSet("mc-alias",a);
-  clearTimeout(aliasT); aliasT=setTimeout(()=>{ const r=perfilRef(); if(r) r.set({alias:getAlias()||a, pid:ST.uid||"", at:Date.now()}).catch(()=>{}); },800); }
+  clearTimeout(aliasT); aliasT=setTimeout(()=>{ const r=perfilRef(); if(r) r.set({alias:getAlias()||a, pid:ST.uid||"", at:Date.now()}).catch(()=>{}); if(window.PUSH) PUSH.touch(); },800); }
 const me = () => ST.T && ST.T.players[ST.uid] && !ST.T.players[ST.uid].out ? ST.T.players[ST.uid] : null;
 
 // ---------------- Capacidades ----------------
@@ -631,10 +631,7 @@ document.addEventListener("click",e=>{ const box=$("notif"); if(!box||!box.conta
   if(e.target.closest("[data-x]")) box.hidden=true; });
 // ---------------- Tablero de campeones ----------------
 UI.boardSort = lsGet("mc-sort")==="net" ? "net" : "chips";
-async function loadBoard(){
-  if(!ST.db){ $("boardBox").hidden=true; return; }
-  if($("lobby").hidden) return;
-  let docs=[]; try{ docs=(await ST.db.collection("mesas").limit(300).get()).docs.map(d=>d.data()); }catch(e){ $("board").html='<div class="empty">No se pudo cargar el tablero.</div>'; return; }
+function boardAgg(docs){
   const agg={};
   docs.forEach(m=>{ if(!m||!m.players) return;
     Object.values(m.players).forEach(p=>{ if(!p||p.bot) return;
@@ -642,6 +639,14 @@ async function loadBoard(){
       const a=agg[k]||(agg[k]={name:p.name,chips:0,net:0,mesas:0,last:0});
       a.chips=r2(a.chips+(p.chips||0)); a.net=r2(a.net+(p.chips||0)-(m.buyIn||0)*(1+(p.rebuys||0))); a.mesas++;
       if((m.updated||0)>a.last){ a.last=m.updated||0; a.name=p.name; } }); });
+  return agg;
+}
+async function loadBoard(){
+  if(!ST.db){ $("boardBox").hidden=true; return; }
+  if($("lobby").hidden) return;
+  let docs=[]; try{ docs=(await ST.db.collection("mesas").limit(300).get()).docs.map(d=>d.data()); }catch(e){ $("board").html='<div class="empty">No se pudo cargar el tablero.</div>'; return; }
+  const agg=boardAgg(docs);
+  if(window.PUSH) PUSH.rankCheck(agg);
   const rows=Object.values(agg).sort((a,b)=>UI.boardSort==="net" ? b.net-a.net : b.chips-a.chips).slice(0,12);
   $("board").html = rows.length ? rows.map((r,i)=>`<div class="lbr${i===0?" top":""}"><span class="rk${i<3?" g"+(i+1):""}">${i+1}</span><span class="who"><b>${esc(r.name)}</b><span>${r.mesas} mesa${r.mesas===1?"":"s"}</span></span><span class="amt">${UI.boardSort==="net"?`<span class="${r.net>0?"up":r.net<0?"down":""}">${sgn(r.net)}</span><small class="muted">${fmt(r.chips)} en fichas</small>`:`${fmt(r.chips)}<small class="${r.net>0?"up":r.net<0?"down":""}">${sgn(r.net)}</small>`}</span></div>`).join("")
     : '<div class="empty">Aún no hay jugadores. Abre una mesa y empieza.</div>';
@@ -712,7 +717,7 @@ async function openMesa(code,T0){
   ST.code=code; ST.ref = ST.canMulti ? ST.db.doc("mesas/"+code) : null;
   if(T0){
     ST.T=T0;
-    if(ST.ref){ try{ await ST.ref.set(clone(T0)); }catch(e){ toast("No se pudo crear la mesa. Intenta otra vez."); ST.code=null; ST.ref=null; ST.T=null; return; } }
+    if(ST.ref){ try{ await ST.ref.set(clone(T0)); }catch(e){ toast("No se pudo crear la mesa. Intenta otra vez."); ST.code=null; ST.ref=null; ST.T=null; return; }  if(window.PUSH) PUSH.mesaNueva(T0); }
   } else {
     if(!ST.ref){ toast("En esta vista no hay mesas compartidas"); return; }
     let s; try{ s=await ST.ref.get(); }catch(e){ toast("No se pudo abrir la mesa. Intenta otra vez."); return; }
@@ -1055,7 +1060,7 @@ function renderSeats(){
     const pst=payState(T), pay=payOf(T,id);
     const delta = pst.paid && pst.k && pay && pst.since<2600 ? `<span class="delta ${pay>0?"up":"down"}">${sgn(pay)}</span>` : "";
     // sonido de monedas cuando a ti te pagan (una vez por resultado; al perder no suena nada)
-    if(id===ST.uid && pst.paid && pst.k && pay>0 && pst.since<2600 && UI.coinKey!==pst.k){ UI.coinKey=pst.k; coins(pay); }
+    if(id===ST.uid && pst.paid && pst.k && pay>0 && pst.since<2600 && UI.coinKey!==pst.k){ UI.coinKey=pst.k; coins(pay); if(window.PUSH) PUSH.rankSoon(); }
     const tags=[];
     if(id===ST.uid) tags.push("<b>tú</b>");
     if(p.bot) tags.push("bot");

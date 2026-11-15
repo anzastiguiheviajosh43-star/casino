@@ -350,6 +350,7 @@ h1,h2,h3{margin:0;font-weight:400}
     <div class="panel">
       <h2>Mesas abiertas</h2>
       <label class="toggle"><input type="checkbox" id="bellOn" checked> Sonidos: campanita cuando alguien abra una mesa y aviso cuando te toque</label>
+      <div class="pushbox"><button class="btn sm" id="pushBtn" hidden>🔔 Activar avisos en este cel</button><p class="note" id="pushNote"></p></div>
       <div class="mlist" id="mlist"><div class="empty">Buscando mesas…</div></div>
       <div class="raise">
         <input id="codeIn" maxlength="4" placeholder="Código, ej. K7QM" autocomplete="off" style="text-transform:uppercase">
@@ -412,6 +413,7 @@ h1,h2,h3{margin:0;font-weight:400}
 <script src="config.js"></script>
 <script src="adapter.js"></script>
 <script src="casino.js"></script>
+<script src="push.js"></script>
 <script>if("serviceWorker" in navigator) addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}));</script>
 </body>
 </html>
