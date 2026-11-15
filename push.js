@@ -83,31 +83,30 @@
     send(n=>set.has(n), {title:"🏆 Te ganaron el puesto", body:`${getAlias()} te rebasó en el tablero: ahora va #${i+1} con ${fmt(agg[me]?agg[me].chips:0)} en fichas.`, tag:"rank"});
   }
   let rankT=null, rankLast=0;
-  function rankSoon(){ clearTimeout(rankT); const wait=Math.max(4000, 60000-(Date.now()-rankLast));
+  function rankSoon(){ clearTimeout(rankT); const wait=Math.max(3000, 20000-(Date.now()-rankLast));
     rankT=setTimeout(async()=>{ rankLast=Date.now(); try{ const docs=(await ST.db.collection("mesas").limit(300).get()).docs.map(d=>d.data()); rankCheck(boardAgg(docs)); }catch(e){} }, wait); }
 
 
-  // ---- 3) Alguien se sienta en una mesa que ya existía: avisa a los que están en ella
+  // ---- 3) Alguien entra a una mesa que ya existía (aunque ya tuviera lugar de antes)
+  // Se avisa en cuanto queda sentado: a los de esa mesa "llegó alguien", a los demás "X entró a una mesa".
   let joinT=null;
-  function joinSoon(){
-    const T0=ST.T; if(!T0) return; const code=T0.code||ST.code;
-    const had=!!(T0.players && T0.players[ST.uid] && !T0.players[ST.uid].out);
-    if(had) return;
-    clearTimeout(joinT);
-    joinT=setTimeout(()=>{
-      const T=ST.T; if(!T || (T.code||ST.code)!==code) return;
-      const p=T.players && T.players[ST.uid]; if(!p || p.out) return;          // no se pudo sentar
-      const me=getAlias(), key="mc-joinpush:"+code+":"+normName(me);
-      const last=+(localStorage.getItem(key)||0); if(Date.now()-last<10*60000) return;   // máximo un aviso cada 10 min
-      const others=new Set(Object.entries(T.players).filter(([id,x])=>id!==ST.uid && x && !x.bot && !x.out && normName(x.name)!==normName(me)).map(([,x])=>normName(x.name)));
+  function entered(code){
+    clearInterval(joinT); const t0=Date.now();
+    joinT=setInterval(()=>{
+      const T=ST.T;
+      if(!T || ST.code!==code || Date.now()-t0>25000){ clearInterval(joinT); return; }   // salió o no se pudo sentar
+      const p=T.players && T.players[ST.uid]; if(!p || p.out) return;                   // todavía no se sienta
+      clearInterval(joinT);
+      const me=getAlias(), meN=normName(me), key="mc-joinpush:"+code+":"+meN;
+      const last=+(localStorage.getItem(key)||0); if(Date.now()-last<5*60000) return;   // máximo un aviso cada 5 min por mesa
       localStorage.setItem(key, String(Date.now()));
-      const meN=normName(me), where=`“${T.name}” (${GNAME[T.game]||"casino"})`;
-      // a los que están en esa mesa: "llegó alguien a tu mesa"; a todos los demás: "X entró a una mesa"
-      if(others.size) send(n=>others.has(n), {title:"🪑 Llegó alguien a tu mesa", body:`${me} se sentó en ${where}. ¡A jugar!`, tag:"join-"+code});
-      send(n=>n!==meN && !others.has(n), {title:`🪑 ${me} entró a una mesa`, body:`Se sentó en ${where}. Código ${code}`, tag:"join-"+code});
-    }, 3000);
+      const others=new Set(Object.entries(T.players).filter(([id,x])=>id!==ST.uid && x && !x.bot && !x.out && normName(x.name)!==meN).map(([,x])=>normName(x.name)));
+      const where=`“${T.name}” (${GNAME[T.game]||"casino"})`;
+      if(others.size) send(n=>others.has(n), {title:"🪑 Llegó alguien a tu mesa", body:`${me} se sentó en ${where}. ¡A jugar!`, tag:"join-"+code+"-"+meN});
+      send(n=>n!==meN && !others.has(n), {title:`🪑 ${me} entró a una mesa`, body:`Se sentó en ${where}. Código ${code}`, tag:"join-"+code+"-"+meN});
+    }, 700);
   }
-  window.PUSH = { enable, touch, paint, mesaNueva, rankCheck, rankSoon, joinSoon };
+  window.PUSH = { enable, touch, paint, mesaNueva, rankCheck, rankSoon, entered };
   document.addEventListener("click", e=>{ if(e.target && e.target.id==="pushBtn") enable(); });
   const start=()=>{ paint(); const wait=setInterval(()=>{ if(ST.acct){ clearInterval(wait); touch(); } },500); };
   if(document.readyState==="loading") document.addEventListener("DOMContentLoaded", start); else start();
