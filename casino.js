@@ -1532,15 +1532,15 @@ const RSVG={
   ctm:`<img class="rimg" src="r-ctm.png" alt="">`,
   dealer:`<img class="rimg" src="r-dealer.png" alt="">`,
   faah:`<img class="rimg" src="r-faah.png" alt="">`,
-  casino:`<svg viewBox="0 0 48 48"><rect x="4" y="16" width="20" height="20" rx="4" transform="rotate(-12 14 26)" fill="#f1ede2" stroke="#7a1d14" stroke-width="2"/><g fill="#c0392b" transform="rotate(-12 14 26)"><circle cx="9" cy="21" r="2"/><circle cx="14" cy="26" r="2"/><circle cx="19" cy="31" r="2"/></g><rect x="22" y="20" width="20" height="20" rx="4" transform="rotate(14 32 30)" fill="#f1ede2" stroke="#7a1d14" stroke-width="2"/><g fill="#c0392b" transform="rotate(14 32 30)"><circle cx="27" cy="25" r="2"/><circle cx="37" cy="25" r="2"/><circle cx="27" cy="35" r="2"/><circle cx="37" cy="35" r="2"/></g><circle cx="33" cy="9" r="7" fill="#f2c14e" stroke="#7a5a12" stroke-width="2"/><circle cx="33" cy="9" r="3.5" fill="none" stroke="#7a5a12" stroke-width="1.5" stroke-dasharray="2 1.6"/></svg>`
+  ride:`<img class="rimg" src="r-ride.png" alt="">`
 };
 const REACTS=[
   {s:"jaja",    t:"JAJAJA",     c:"#f2c14e", k:"burla"},
   {s:"bluff",   t:"BLUFF",      c:"#4f7fd6", k:"bluff"},
-  {s:"ctm",     t:"CTM",        c:"#e24a35", k:"enojo", shake:true},
-  {s:"dealer",  t:"DEALER HDP!",c:"#8a63d2", k:"enojo", shake:true},
+  {s:"ctm",     t:"CTM",        c:"#e24a35", k:"ctm", shake:true},
+  {s:"dealer",  t:"DEALER HDP!",c:"#8a63d2", k:"dealer", shake:true},
   {s:"faah",    t:"FAAAAH",     c:"#7fb0c6", k:"faah"},
-  {s:"casino",  t:"PAL’ CASINO",c:"#3fb37a", k:"casino"}
+  {s:"ride",    t:"LET IT RIDE!",tb:"LET IT<br>RIDE!",c:"#ff5a2a", k:"casino"}
 ];
 const RX={unsub:null, seen:{}, init:false, last:0, code:null};
 function reactRef(code){ return ST.db ? ST.db.collection("mesas/"+code+"/react") : null; }
@@ -1550,22 +1550,43 @@ function renderReacts(T){
   const show = !!ST.db && humans>=2 && !!me();
   box.hidden=!show; if(!show) return;
   const wait = now()-RX.last < 2500;
-  box.html=REACTS.map((r,i)=>`<button data-react="${i}" aria-label="${esc(r.t)}" style="--rc:${r.c}"${wait?" disabled":""}><span class="ri">${RSVG[r.s]}</span><small>${esc(r.t).replace(/[’]? /,m=>m.trim()+"<br>")}</small></button>`).join("");
+  box.html=REACTS.map((r,i)=>`<button data-react="${i}" aria-label="${esc(r.t)}" style="--rc:${r.c}"${wait?" disabled":""}><span class="ri">${RSVG[r.s]}</span><small>${r.tb||esc(r.t).replace(/[’]? /,m=>m.trim()+"<br>")}</small></button>`).join("");
   if(wait){ clearTimeout(renderReacts.t); renderReacts.t=setTimeout(()=>ST.T&&renderReacts(ST.T), 2500-(now()-RX.last)+30); }
+}
+// Sonidos de los stickers (sintetizados, sin archivos)
+function reactSfx(ac, k, dest){
+  const t=ac.currentTime+0.02, out=dest||ac.destination;
+  const env=(g,at,peak,dur,att)=>{ g.gain.setValueAtTime(0.0001,ac.currentTime); g.gain.setValueAtTime(0.0001,at); g.gain.exponentialRampToValueAtTime(peak,at+(att||0.01)); g.gain.exponentialRampToValueAtTime(0.0001,at+dur); };
+  const tone=(type,f1,f2,off,dur,vol)=>{ const o=ac.createOscillator(), g=ac.createGain(); o.type=type;
+    o.frequency.setValueAtTime(f1,t+off); if(f2) o.frequency.exponentialRampToValueAtTime(f2,t+off+dur);
+    g.gain.setValueAtTime(0.0001,t+off); g.gain.exponentialRampToValueAtTime(vol,t+off+0.02); g.gain.setValueAtTime(vol,t+off+dur*0.6); g.gain.exponentialRampToValueAtTime(0.0001,t+off+dur);
+    o.connect(g); g.connect(out); o.start(t+off); o.stop(t+off+dur+0.05); };
+  const noise=(off,dur,vol,type,freq,q)=>{ const n=Math.ceil(ac.sampleRate*dur), buf=ac.createBuffer(1,n,ac.sampleRate), d=buf.getChannelData(0); for(let i=0;i<n;i++) d[i]=Math.random()*2-1;
+    const src=ac.createBufferSource(); src.buffer=buf; const f=ac.createBiquadFilter(); f.type=type; f.frequency.value=freq; f.Q.value=q||1; const g=ac.createGain(); env(g,t+off,vol,dur,0.002);
+    src.connect(f); f.connect(g); g.connect(out); src.start(t+off); src.stop(t+off+dur+0.02); };
+  // sílaba "ja": pulso de voz por dos formantes de la vocal "a", con su "j" de aire al inicio
+  const ja=(off,f0,dur,vol)=>{ const o=ac.createOscillator(); o.type="sawtooth"; o.frequency.setValueAtTime(f0*1.08,t+off); o.frequency.exponentialRampToValueAtTime(f0*0.9,t+off+dur);
+    const g=ac.createGain(); env(g,t+off,vol,dur+0.02,0.025);
+    [[800,7,1],[1250,9,0.7],[2600,10,0.25]].forEach(([fq,q,a])=>{ const f=ac.createBiquadFilter(); f.type="bandpass"; f.frequency.value=fq; f.Q.value=q; const ga=ac.createGain(); ga.gain.value=a; o.connect(f); f.connect(ga); ga.connect(g); });
+    g.connect(out); o.start(t+off); o.stop(t+off+dur+0.06); noise(off,0.05,vol*0.25,"bandpass",1800,1.5); };
+  if(k==="burla"){                                         // "¡ja-ja-ja-ja-jaaa!" de burla, va subiendo de tono
+    [[0,330,.11],[.15,350,.11],[.30,372,.11],[.45,395,.11],[.60,430,.30]].forEach(([o,f,d])=>ja(o,f,d,0.42));
+  } else if(k==="bluff"){ tone("sine",392,0,0,.16,.12); tone("sine",587,0,.18,.3,.12); }
+  else if(k==="ctm"){                                       // pitido de censura de tele: "¡biiiip!"
+    tone("sine",1000,0,0,.62,.14); noise(0,0.04,0.05,"highpass",3000);
+  } else if(k==="dealer"){                                  // manotazo en la mesa + doble censura
+    // golpe seco: ataque instantáneo, cuerpo grave y el "crack" de la madera
+    const slam=(type,f1,f2,dur,vol)=>{ const o=ac.createOscillator(), g=ac.createGain(); o.type=type; o.frequency.setValueAtTime(f1,t); o.frequency.exponentialRampToValueAtTime(f2,t+dur);
+      g.gain.setValueAtTime(0.0001,ac.currentTime); g.gain.setValueAtTime(vol,t); g.gain.exponentialRampToValueAtTime(0.0001,t+dur); o.connect(g); g.connect(out); o.start(t); o.stop(t+dur+0.02); };
+    slam("sine",150,38,.26,.36); slam("triangle",260,70,.09,.17);
+    noise(0,0.16,0.6,"lowpass",320,0.9); noise(0,0.035,0.26,"highpass",2500,0.7);
+    tone("sine",1000,0,.26,.13,.13); tone("sine",1000,0,.44,.30,.13);
+  } else if(k==="faah"){ tone("sawtooth",300,95,0,1.1,.07); tone("triangle",600,190,0,1.1,.05); }   // "faaaah" que se cae
 }
 function reactSound(r){
   if(lsGet("mc-bell")==="off"||!actx) return;
   if(r.k==="casino"){ coins(5000); return; }
-  try{ const t=actx.currentTime;
-    const tone=(type,f1,f2,off,dur,vol)=>{ const o=actx.createOscillator(), g=actx.createGain(); o.type=type;
-      o.frequency.setValueAtTime(f1,t+off); if(f2) o.frequency.exponentialRampToValueAtTime(f2,t+off+dur);
-      g.gain.setValueAtTime(0.0001,t+off); g.gain.exponentialRampToValueAtTime(vol,t+off+0.02); g.gain.setValueAtTime(vol,t+off+dur*0.6); g.gain.exponentialRampToValueAtTime(0.0001,t+off+dur);
-      o.connect(g); g.connect(actx.destination); o.start(t+off); o.stop(t+off+dur+0.05); };
-    if(r.k==="burla") [[660,0],[880,.09],[660,.18],[990,.27]].forEach(([f,o])=>tone("triangle",f,0,o,.12,.12));
-    else if(r.k==="bluff"){ tone("sine",392,0,0,.16,.12); tone("sine",587,0,.18,.3,.12); }
-    else if(r.k==="enojo"){ tone("sawtooth",180,150,0,.18,.06); tone("sawtooth",160,120,.2,.25,.06); }
-    else if(r.k==="faah"){ tone("sawtooth",300,95,0,1.1,.07); tone("triangle",600,190,0,1.1,.05); }   // "faaaah" que se cae
-  }catch(e){}
+  try{ reactSfx(actx, r.k); }catch(e){}
 }
 function showReact(pid, i, name){
   const r=REACTS[i]; if(!r) return;
