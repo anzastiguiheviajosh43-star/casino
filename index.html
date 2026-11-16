@@ -142,6 +142,21 @@ h1,h2,h3{margin:0;font-weight:400}
 .seats{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
 .seat{border:1px solid var(--felt-line);border-radius:12px;padding:7px 8px;background:rgba(0,0,0,.18);min-width:0;display:flex;flex-direction:column;gap:2px;position:relative}
 .seat.me{border-color:var(--brass)}
+.reacts{display:flex;gap:6px;justify-content:space-between;margin:6px 0 2px}
+.reacts button{flex:1;min-width:0;border:1px solid var(--felt-line);background:rgba(0,0,0,.22);border-radius:12px;padding:5px 0 4px;font-size:1.25rem;line-height:1;cursor:pointer;touch-action:manipulation;color:inherit;display:flex;flex-direction:column;align-items:center;gap:2px}
+.reacts button small{font:800 .54rem/1.05 system-ui,sans-serif;color:var(--rc,var(--muted));text-align:center;max-width:100%;min-height:1.1em;display:flex;align-items:center}
+.reacts .ri{display:block;width:28px;height:28px}.reacts .ri svg,.rbub .e svg{width:100%;height:100%;display:block}
+.rimg{width:100%;height:100%;display:block;object-fit:contain;image-rendering:pixelated}
+.rbub .rimg{filter:drop-shadow(0 2px 0 #0d1a15)}
+.reacts button:active{transform:scale(.92)}
+.reacts button:disabled{opacity:.4}
+.rbub{position:fixed;z-index:60;pointer-events:none;transform:translate(-50%,0);display:flex;flex-direction:column;align-items:center;animation:rbub 3s ease-out forwards}
+.rbub .e{display:block;width:62px;height:62px;filter:drop-shadow(0 3px 6px rgba(0,0,0,.5))}
+.rbub .t{margin-top:2px;background:var(--rc,#f1ede2);color:#0d1a15;font:900 .95rem/1 system-ui,sans-serif;letter-spacing:.04em;padding:5px 11px;border-radius:8px;border:2px solid #0d1a15;white-space:nowrap;box-shadow:0 3px 0 #0d1a15,0 6px 14px rgba(0,0,0,.4);transform:rotate(-4deg)}
+@keyframes rbub{0%{opacity:0;transform:translate(-50%,10px) scale(.4)}12%{opacity:1;transform:translate(-50%,-6px) scale(1.15)}22%{transform:translate(-50%,-10px) scale(1)}80%{opacity:1;transform:translate(-50%,-26px)}100%{opacity:0;transform:translate(-50%,-40px)}}
+.rbub.shake .e{animation:rshake .5s 3}
+@keyframes rshake{0%,100%{transform:rotate(0)}25%{transform:rotate(-14deg)}75%{transform:rotate(14deg)}}
+
 .seat.turn{box-shadow:0 0 0 2px var(--brass),0 0 14px rgba(212,178,92,.45)}
 .seat.away{opacity:.55}
 .seat.free{border-style:dashed;align-items:center;justify-content:center;color:var(--muted);font-size:.82rem;min-height:58px}
@@ -398,6 +413,7 @@ h1,h2,h3{margin:0;font-weight:400}
       <button data-g="bac">Baccarat</button><button data-g="rul">Ruleta</button><button data-g="bj">Blackjack</button><button data-g="pk">Póker</button>
     </nav>
     <div class="seats" id="seats"></div>
+    <div class="reacts" id="reacts" hidden></div>
     <div class="hostwarn who" id="whoBox" hidden></div>
     <div class="hostwarn" id="hostWarn" hidden><span id="hostWarnTxt">El anfitrión se desconectó.</span><button class="btn sm go" id="takeHost">Ser el anfitrión</button></div>
     <div class="felt" id="game"></div>

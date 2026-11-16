@@ -734,12 +734,13 @@ async function openMesa(code,T0){
     else if(ST.T && ST.code===code && !s.metadata.hasPendingWrites){ toast("Esta mesa se eliminó"); closeMesa(); }
   }, ()=>{});
   connectRoom(code);
+  watchReacts(code);
   saveAlias(); ensureSeat(alias);
   if(!ST.T.open) mesaDo(T=>{ if(T.open) return false; T.open=true; return true; });
   render();
 }
 function closeMesa(silent){
-  ST.unsubDoc && ST.unsubDoc(); ST.unsubDoc=null;
+  ST.unsubDoc && ST.unsubDoc(); ST.unsubDoc=null; stopReacts();
   ST.rmOff.forEach(f=>{ try{ f(); }catch(e){} }); ST.rmOff=[];
   if(ST.rm){ ST.rm.leave().catch(()=>{}); ST.rm=null; }
   Q.length=0;
@@ -972,7 +973,7 @@ function renderInner(){
   if(UI.move && (T.game!==UI.move.d.game || T.g.k!==UI.move.d.k)) UI.move=null;
   $("mName").textContent=T.name; $("mCode").textContent="Código "+T.code;
   document.querySelectorAll("#tabs button").forEach(b=>{ b.classList.toggle("on",b.dataset.g===T.game); b.disabled = b.dataset.g!==T.game && (!me() || !canSwitch(T)); });
-  renderWho(); autoSeat(T); $("hostWarn").hidden=true;
+  renderWho(); autoSeat(T); $("hostWarn").hidden=true; renderReacts(T);
   ({bac:renderBac,rul:renderRul,bj:renderBj,pk:renderPk})[T.game](T,T.g);
   renderSeats();
   renderHostbar(); renderLog(); renderConn(); renderAlert(T);
@@ -1068,7 +1069,7 @@ function renderSeats(){
     if(away) tags.push("fuera");
     if(g.phase==="bet" && g.bets){ const b=sumObj(g.bets[id]); if(b) tags.push(fmtK(b)); if(g.ready[id]) tags.push("✓ listo"); }
     if(T.game==="pk" && g.ps && g.ps[id]){ if(g.btn===id) tags.push("D"); if(g.ps[id].fold) tags.push("fuera de la mano"); else if(g.ps[id].allin) tags.push("all-in"); }
-    h+=`<div class="seat${id===ST.uid?" me":""}${isTurn(T,id)?" turn":""}${away?" away":""}">
+    h+=`<div data-pid="${esc(id)}" class="seat${id===ST.uid?" me":""}${isTurn(T,id)?" turn":""}${away?" away":""}">
       <div class="nm"><i style="background:${SEATC[s]}"></i><span>${esc(p.name)}</span></div>
       <div class="ch">${fmt(ch)}${delta}</div>
       <div class="tg"><span class="${neto>0?"up":neto<0?"down":""}">${neto?sgn(neto):"±0"}</span>${tags.map(t=>`<span>${t}</span>`).join("")}</div></div>`;
@@ -1453,6 +1454,88 @@ $("bellOn").checked = lsGet("mc-bell")!=="off";
 $("bellOn").addEventListener("change",()=>{ lsSet("mc-bell",$("bellOn").checked?"on":"off"); if($("bellOn").checked){ unlockAudio(); bell(); } });
 UI.chip = +lsGet("mc-chip") || 100;
 initCaps();
+
+// ---------------- Reacciones (2 o más jugadores) ----------------
+// Cada quien escribe su última reacción en mesas/<código>/react/<jugador>; los demás la ven como globito sobre su lugar.
+// Stickers dibujados (SVG) para no depender de los emojis del cel
+const RSVG={
+  jaja:`<img class="rimg" src="r-jaja.png" alt="">`,
+  bluff:`<svg viewBox="0 0 48 48"><rect x="7" y="9" width="21" height="30" rx="3" transform="rotate(-14 17 24)" fill="#f1ede2" stroke="#1d2b4a" stroke-width="2"/><rect x="20" y="9" width="21" height="30" rx="3" transform="rotate(10 30 24)" fill="#2c4a8a" stroke="#1d2b4a" stroke-width="2"/><path d="M24 15l3 3-3 3-3-3zM33 25l3 3-3 3-3-3zM27 33l3 3-3 3-3-3z" fill="#f2c14e" transform="rotate(10 30 24)"/><path d="M8 28h32" stroke="#111" stroke-width="5" stroke-linecap="round"/><rect x="9" y="25" width="12" height="7" rx="3" fill="#111"/><rect x="27" y="25" width="12" height="7" rx="3" fill="#111"/><path d="M12 27l3-1" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>`,
+  ctm:`<img class="rimg" src="r-ctm.png" alt="">`,
+  trampas:`<svg viewBox="0 0 48 48"><path d="M4 30q10-8 22-6l16 2v14l-17 1q-14 1-21-5z" fill="#5b3fa0" stroke="#2c1d55" stroke-width="2"/><path d="M4 30q4 5 9 4" fill="none" stroke="#2c1d55" stroke-width="2"/><rect x="20" y="4" width="18" height="25" rx="3" transform="rotate(16 29 16)" fill="#f1ede2" stroke="#2c1d55" stroke-width="2"/><text x="29" y="21" transform="rotate(16 29 16)" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="13" fill="#111">A♠</text><path d="M41 5l1.4 3 3 1.4-3 1.4-1.4 3-1.4-3-3-1.4 3-1.4zM14 8l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" fill="#f2c14e"/></svg>`,
+  faah:`<img class="rimg" src="r-faah.png" alt="">`,
+  casino:`<svg viewBox="0 0 48 48"><rect x="4" y="16" width="20" height="20" rx="4" transform="rotate(-12 14 26)" fill="#f1ede2" stroke="#7a1d14" stroke-width="2"/><g fill="#c0392b" transform="rotate(-12 14 26)"><circle cx="9" cy="21" r="2"/><circle cx="14" cy="26" r="2"/><circle cx="19" cy="31" r="2"/></g><rect x="22" y="20" width="20" height="20" rx="4" transform="rotate(14 32 30)" fill="#f1ede2" stroke="#7a1d14" stroke-width="2"/><g fill="#c0392b" transform="rotate(14 32 30)"><circle cx="27" cy="25" r="2"/><circle cx="37" cy="25" r="2"/><circle cx="27" cy="35" r="2"/><circle cx="37" cy="35" r="2"/></g><circle cx="33" cy="9" r="7" fill="#f2c14e" stroke="#7a5a12" stroke-width="2"/><circle cx="33" cy="9" r="3.5" fill="none" stroke="#7a5a12" stroke-width="1.5" stroke-dasharray="2 1.6"/></svg>`
+};
+const REACTS=[
+  {s:"jaja",    t:"JAJAJA",     c:"#f2c14e", k:"burla"},
+  {s:"bluff",   t:"BLUFF",      c:"#4f7fd6", k:"bluff"},
+  {s:"ctm",     t:"CTM",        c:"#e24a35", k:"enojo", shake:true},
+  {s:"trampas", t:"TRAMPAS",    c:"#8a63d2", k:"enojo", shake:true},
+  {s:"faah",    t:"FAAAAH",     c:"#7fb0c6", k:"faah"},
+  {s:"casino",  t:"PAL’ CASINO",c:"#3fb37a", k:"casino"}
+];
+const RX={unsub:null, seen:{}, init:false, last:0, code:null};
+function reactRef(code){ return ST.db ? ST.db.collection("mesas/"+code+"/react") : null; }
+function renderReacts(T){
+  const box=$("reacts"); if(!box) return;
+  const humans=seated(T).filter(id=>!T.players[id].bot).length;
+  const show = !!ST.db && humans>=2 && !!me();
+  box.hidden=!show; if(!show) return;
+  const wait = now()-RX.last < 2500;
+  box.html=REACTS.map((r,i)=>`<button data-react="${i}" aria-label="${esc(r.t)}" style="--rc:${r.c}"${wait?" disabled":""}><span class="ri">${RSVG[r.s]}</span><small>${esc(r.t).replace("’ ","’<br>")}</small></button>`).join("");
+  if(wait){ clearTimeout(renderReacts.t); renderReacts.t=setTimeout(()=>ST.T&&renderReacts(ST.T), 2500-(now()-RX.last)+30); }
+}
+function reactSound(r){
+  if(lsGet("mc-bell")==="off"||!actx) return;
+  if(r.k==="casino"){ coins(5000); return; }
+  try{ const t=actx.currentTime;
+    const tone=(type,f1,f2,off,dur,vol)=>{ const o=actx.createOscillator(), g=actx.createGain(); o.type=type;
+      o.frequency.setValueAtTime(f1,t+off); if(f2) o.frequency.exponentialRampToValueAtTime(f2,t+off+dur);
+      g.gain.setValueAtTime(0.0001,t+off); g.gain.exponentialRampToValueAtTime(vol,t+off+0.02); g.gain.setValueAtTime(vol,t+off+dur*0.6); g.gain.exponentialRampToValueAtTime(0.0001,t+off+dur);
+      o.connect(g); g.connect(actx.destination); o.start(t+off); o.stop(t+off+dur+0.05); };
+    if(r.k==="burla") [[660,0],[880,.09],[660,.18],[990,.27]].forEach(([f,o])=>tone("triangle",f,0,o,.12,.12));
+    else if(r.k==="bluff"){ tone("sine",392,0,0,.16,.12); tone("sine",587,0,.18,.3,.12); }
+    else if(r.k==="enojo"){ tone("sawtooth",180,150,0,.18,.06); tone("sawtooth",160,120,.2,.25,.06); }
+    else if(r.k==="faah"){ tone("sawtooth",300,95,0,1.1,.07); tone("triangle",600,190,0,1.1,.05); }   // "faaaah" que se cae
+  }catch(e){}
+}
+function showReact(pid, i, name){
+  const r=REACTS[i]; if(!r) return;
+  const seat=document.querySelector(`#seats .seat[data-pid="${CSS.escape(pid)}"]`);
+  let x=innerWidth/2, y=innerHeight/3;
+  if(seat){ const b=seat.getBoundingClientRect(); x=b.left+b.width/2; y=Math.max(8,b.top-30); }
+  const d=document.createElement("div"); d.className="rbub"+(r.shake?" shake":"");
+  d.style.left=x+"px"; d.style.top=y+"px";
+  d.style.setProperty("--rc",r.c); d.innerHTML=`<span class="e">${RSVG[r.s]}</span><span class="t">${esc(r.t)}</span>`;
+  if(!seat && name) d.querySelector(".t").textContent=name+": "+r.t;
+  document.body.appendChild(d); setTimeout(()=>d.remove(),3100);
+  reactSound(r);
+}
+function sendReact(i){
+  const T=ST.T; if(!T || !me() || now()-RX.last<2500) return;
+  RX.last=now(); renderReacts(T);
+  showReact(ST.uid, i);                                    // lo ves al instante en tu lugar
+  const ref=reactRef(T.code); if(!ref) return;
+  ref.doc(ST.uid).set({i, at:Date.now(), name:getAlias()}).catch(()=>{});
+}
+function watchReacts(code){
+  stopReacts(); const ref=reactRef(code); if(!ref) return;
+  RX.code=code; RX.init=false; RX.seen={};
+  try{
+    RX.unsub=ref.onSnapshot(qs=>{
+      if(RX.code!==code) return;
+      qs.docs.forEach(d=>{ const v=d.data()||{}, at=+v.at||0, pid=d.id;
+        if(!RX.init){ RX.seen[pid]=at; return; }                              // lo que ya estaba al entrar no se muestra
+        if(at<=(RX.seen[pid]||0)) return; RX.seen[pid]=at;
+        if(pid===ST.uid) return;
+        showReact(pid, v.i, v.name);
+      });
+      RX.init=true;
+    }, ()=>{});
+  }catch(e){}
+}
+function stopReacts(){ try{ RX.unsub&&RX.unsub(); }catch(e){} RX.unsub=null; RX.code=null; }
+document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("[data-react]"); if(b && !b.disabled) sendReact(+b.dataset.react); });
 // ================= Solitario (Klondike) con niveles =================
 const SOLV = [ // dificultad por nivel: robar, vueltas al mazo (0 = sin límite), deshacer, Ases ya puestos
   {name:"Aprendiz", draw:1, passes:0, undo:99, aces:true},
