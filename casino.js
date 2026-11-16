@@ -199,11 +199,10 @@ const BJ = {
       case "split": {
         // se puede dividir y volver a dividir (también Ases) hasta tener 4 manos
         if(h.c.length!==2||hs.length>=4||bjVal(h.c[0])!==bjVal(h.c[1])||free<h.bet) return false;
-        const ace=h.c[0][0]==="A", c2=h.c.pop(), nh={c:[c2],bet:h.bet,sp:true}; h.sp=true;
-        if(ace){ h.sa=true; nh.sa=true; }
+        const c2=h.c.pop(), nh={c:[c2],bet:h.bet,sp:true}; h.sp=true;
         h.c.push(draw(g)); nh.c.push(draw(g)); hs.splice(g.turn.h+1,0,nh);
-        // Ases divididos reciben una sola carta; si esa carta es otro As, puedes volver a dividir
-        const fin=x=> ace ? !(x.c[1][0]==="A" && hs.length<4) : bjTot(x.c).t===21;
+        // cada mano dividida (también Ases) se juega como una mano más: pedir, doblar o plantarse
+        const fin=x=> bjTot(x.c).t===21;
         if(fin(h)) h.done=true; if(fin(nh)) nh.done=true;
         break;
       }
@@ -1347,7 +1346,7 @@ function renderBj(T,g){
     <div class="bj-dealer"><div class="lbl">Crupier</div><div class="cards">${dc}</div><div class="tot${late(res?msR:0)}">${dTot}</div></div>
     ${res?`<div class="banner${late(msR)}">${g.dbj?"El crupier tiene blackjack":bjTot(g.dealer).t>21?"El crupier se pasó":"Crupier con "+bjTot(g.dealer).t}${myResult(T,g)}</div>`:g.phase==="bet"?`<div class="banner">Hagan sus apuestas</div>`:""}
     ${g.phase==="bet" ? `<button class="betcircle" data-bet="m"${!me()?" disabled":""}><span>Tu apuesta</span><b>${UI.bets.m?fmt(UI.bets.m):"$0"}</b></button>${betSum?`<div class="waiting">${betSum}</div>`:""}` : `<div class="bj-hands">${hands}</div>`}
-    <p class="note">6 mazos · quedan ${shoeLen(g)} cartas · blackjack paga 3 a 2 · el crupier se planta en 17 · doblas con 2 cartas · divides hasta 4 manos, también Ases · rendirte te devuelve la mitad</p>`;
+    <p class="note">6 mazos · quedan ${shoeLen(g)} cartas · blackjack paga 3 a 2 · el crupier se planta en 17 · doblas con 2 cartas · divides hasta 4 manos, también Ases, y en cada una puedes pedir · rendirte te devuelve la mitad</p>`;
   // controles
   if(g.phase==="play"){
     const p=me(), myTurn=g.turn&&g.turn.id===ST.uid;
