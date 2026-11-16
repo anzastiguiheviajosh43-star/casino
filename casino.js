@@ -331,7 +331,9 @@ const PK = {
     if(alive.length===1){
       const w=alive[0], pot=PK.pot(g); T.players[w].chips=r2(T.players[w].chips+pot); g.won={[w]:pot};
       g.pots=[{amt:pot,win:[w],desc:"Los demás se retiraron"}]; g.phase="show"; g.show=false; g.toAct=null; g.nextAt=now()+5000;
-      addLog(T,`Póker: ${pname(T,w)} se lleva ${pot}`); return;
+      addLog(T,`Póker: ${pname(T,w)} se lleva ${pot}`);
+      if(T.players[w].bot && g.ps[w].bl){ g.last[w]="¡Era bluff! 😏"; addLog(T,`${pname(T,w)} lo ganó blufeando con ${g.ps[w].hole.map(cardTxt).join(" ")}`); }
+      return;
     }
     const actors=alive.filter(id=>!g.ps[id].allin);
     const done = force || actors.every(id=>g.ps[id].bet===g.cur && (g.ps[id].acted || actors.length===1));
@@ -379,32 +381,70 @@ const PK = {
   },
   skip(T){ const g=T.g; if(!g.toAct) return false; const s=g.ps[g.toAct]; return PK.move(T,g.toAct,{k:g.k,m: g.cur-s.bet>0?"fold":"check"}); },
   idle(T){ const g=T.g; return g.phase==="wait"||g.phase==="show"; },
-  // Bot sencillo: fuerza de la mano contra el costo de seguir
+  // Bots con personalidad: cada uno tiene su estilo y cada mano elige un "humor" (seguro / normal / agresivo).
+  // Si pierden fuerte se calientan (tilt) y juegan agresivo unas manos; a veces bluffean y siguen el bluff en la siguiente calle.
   bot(T,id){
     const g=T.g, s=g.ps[id], p=T.players[id];
     if(p.claim) return {m: g.cur-s.bet>0 ? "fold" : "check"};  // alguien va a tomar su lugar
-    const toCall=r2(g.cur-s.bet), pot=PK.pot(g);
+    const sty=BOTSTYLE[id]||BOTSTYLE["bot-1"];
+    if(!s.mode){                                                // humor de esta mano
+      if(p.lastChips!==undefined && p.lastChips-p.chips > T.buyIn*0.4 && Math.random()<sty.tiltP) p.tilt=1+Math.floor(Math.random()*2);
+      p.lastChips=p.chips;
+      if(p.tilt>0){ s.mode="agresivo"; p.tilt--; }
+      else { let r=Math.random(); s.mode=sty.modes.find(([m,w])=>(r-=w)<0)?.[0]||"normal"; }
+      s.bf = Math.random() < sty.bluff*BOTMODE[s.mode].b;      // ¿esta mano trae ganas de bluffear?
+    }
+    const M=BOTMODE[s.mode];
+    const toCall=r2(g.cur-s.bet), pot=PK.pot(g), street=g.board.length;
     let st;
-    if(!g.board.length){
+    if(!street){
       const [a,b]=s.hole.map(RV).sort((x,y)=>y-x), suited=s.hole[0][1]===s.hole[1][1];
       st = a===b ? 0.5+a/30 : (a+b)/32 + (suited?0.06:0) + (a-b===1?0.05:0) + (a===14?0.08:0);
     } else {
-      const e=eval7(s.hole.concat(g.board)), bo=g.board.length>=5?eval7(g.board):null;
+      const all=s.hole.concat(g.board), e=eval7(all), bo=street>=5?eval7(g.board):null;
       st = 0.18 + e[0]*0.13 + (e[1]||0)/140;
-      if(bo && cmpEv(e,bo)===0) st-=0.2;
+      if(bo && cmpEv(e,bo)===0) st-=0.2;                       // juega lo de la mesa
+      if(street<5){                                            // proyectos: color y escalera
+        const suits={}; all.forEach(c=>suits[c[1]]=(suits[c[1]]||0)+1);
+        if(s.hole.some(c=>suits[c[1]]===4)) st+=0.12;
+        const rv=[...new Set(all.map(RV))]; if(rv.includes(14)) rv.push(1);
+        for(let lo=1;lo<=10;lo++){ let n=0; for(let k=lo;k<lo+5;k++) if(rv.includes(k)) n++; if(n>=4){ st+=0.07; break; } }
+      }
     }
-    st += (Math.random()-0.5)*0.16;
+    st += (Math.random()-0.5)*0.16 - sty.tight - M.t;
     const odds = toCall>0 ? toCall/(pot+toCall) : 0;
     const r=Math.random();
-    const raiseAmt = Math.max(g.cur+g.minR, r2(g.cur + Math.max(g.bb, pot*(0.45+Math.random()*0.4))));
-    if(st>0.78 && r<0.65 && p.chips>toCall) return {m:"raise", to:Math.round(raiseAmt)};
-    if(st>0.62 && toCall===0 && r<0.45) return {m:"raise", to:Math.round(raiseAmt)};
-    if(toCall===0) return (r<0.07 ? {m:"raise", to:Math.round(raiseAmt)} : {m:"check"});
-    if(st>odds+0.12 || (toCall<=g.bb && st>0.3)) return {m:"call"};
-    if(r<0.05) return {m:"call"};
+    const size = f => Math.round(Math.max(g.cur+g.minR, r2(g.cur + Math.max(g.bb, pot*f))));
+    const betSize = () => size((0.4+Math.random()*0.45)*M.a*(0.7+sty.aggr*0.5));
+    const shove = {m:"allin"};
+    // 1) Mano monstruo: a veces la esconde (slowplay) para atrapar, si no, sube fuerte
+    if(st>0.85){
+      if(street && street<5 && r<sty.slow) return toCall>0 ? {m:"call"} : {m:"check"};
+      if(s.mode==="agresivo" && r<0.25 && p.chips>toCall) return shove;
+      return p.chips>toCall ? {m:"raise", to:betSize()} : {m:"call"};
+    }
+    // 2) Buena mano: apuesta por valor según qué tan agresivo es
+    if(st>0.62){
+      if(r<sty.aggr*M.a*0.7 && p.chips>toCall) return {m:"raise", to:betSize()};
+      return toCall>0 ? (st>odds+0.05 ? {m:"call"} : {m:"fold"}) : {m:"check"};
+    }
+    // 3) Bluff: si ya bluffeó en una calle, a veces lo sigue; si no, lo intenta según su estilo
+    if(s.bf && (s.bl ? r<0.6 : r<(toCall>0?0.45:0.8))){
+      if(toCall <= p.chips*0.35){ s.bl=true; return {m:"raise", to: size(street ? 0.6+Math.random()*0.5 : 0.5)}; }
+    }
+    // 4) Lo demás: pasar, igualar si conviene, o retirarse
+    if(toCall===0) return {m:"check"};
+    if(st>odds+0.12 || (toCall<=g.bb && st>0.3+sty.tight)) return {m:"call"};
+    if(r<0.04) return {m:"call"};                               // terquedad de vez en cuando
     return {m:"fold"};
   }
 };
+const BOTSTYLE={
+  "bot-1":{tight:0.08,  aggr:0.30, bluff:0.025,slow:0.10, tiltP:0.2, modes:[["seguro",0.6],["normal",0.35],["agresivo",0.05]]},   // Lupe: la roca
+  "bot-2":{tight:-0.06, aggr:0.85, bluff:0.16, slow:0.05, tiltP:0.7, modes:[["agresivo",0.5],["normal",0.35],["seguro",0.15]]},   // Toño: el loco
+  "bot-3":{tight:0.02,  aggr:0.55, bluff:0.09, slow:0.35, tiltP:0.35, modes:[["normal",0.5],["agresivo",0.25],["seguro",0.25]]}    // Chayo: la tiburona
+};
+const BOTMODE={seguro:{t:0.10,b:0.3,a:0.6}, normal:{t:0,b:1,a:1}, agresivo:{t:-0.06,b:1.6,a:1.35}};
 
 const GAMES = {bac:BAC, rul:RUL, bj:BJ, pk:PK};
 function initGame(T,game){ const g=GAMES[game].init(T); g.gid=Math.random().toString(36).slice(2,7); return g; }
@@ -478,7 +518,8 @@ function switchGame(T,game){
 }
 function addBot(T){
   if(T.game!=="pk"||!PK.idle(T)||seatsUsed(T)>=MAXP) return false;
-  const b=BOTS.find(([id])=>!T.players[id]||T.players[id].out); if(!b) return false;
+  const libres=BOTS.filter(([id])=>!T.players[id]||T.players[id].out); if(!libres.length) return false;
+  const b=libres[Math.floor(Math.random()*libres.length)];   // cualquiera de los que no están sentados
   T.players[b[0]]={name:"Bot "+b[1],chips:T.buyIn,seat:freeSeat(T),rebuys:0,bot:true};
   if(!T.order.includes(b[0])) T.order.push(b[0]); sortOrder(T); addLog(T,`Se sentó Bot ${b[1]}`); return true;
 }
