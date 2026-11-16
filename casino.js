@@ -1462,7 +1462,7 @@ const RSVG={
   jaja:`<img class="rimg" src="r-jaja.png" alt="">`,
   bluff:`<svg viewBox="0 0 48 48"><rect x="7" y="9" width="21" height="30" rx="3" transform="rotate(-14 17 24)" fill="#f1ede2" stroke="#1d2b4a" stroke-width="2"/><rect x="20" y="9" width="21" height="30" rx="3" transform="rotate(10 30 24)" fill="#2c4a8a" stroke="#1d2b4a" stroke-width="2"/><path d="M24 15l3 3-3 3-3-3zM33 25l3 3-3 3-3-3zM27 33l3 3-3 3-3-3z" fill="#f2c14e" transform="rotate(10 30 24)"/><path d="M8 28h32" stroke="#111" stroke-width="5" stroke-linecap="round"/><rect x="9" y="25" width="12" height="7" rx="3" fill="#111"/><rect x="27" y="25" width="12" height="7" rx="3" fill="#111"/><path d="M12 27l3-1" stroke="#fff" stroke-width="1.5" stroke-linecap="round"/></svg>`,
   ctm:`<img class="rimg" src="r-ctm.png" alt="">`,
-  trampas:`<svg viewBox="0 0 48 48"><path d="M4 30q10-8 22-6l16 2v14l-17 1q-14 1-21-5z" fill="#5b3fa0" stroke="#2c1d55" stroke-width="2"/><path d="M4 30q4 5 9 4" fill="none" stroke="#2c1d55" stroke-width="2"/><rect x="20" y="4" width="18" height="25" rx="3" transform="rotate(16 29 16)" fill="#f1ede2" stroke="#2c1d55" stroke-width="2"/><text x="29" y="21" transform="rotate(16 29 16)" text-anchor="middle" font-family="Georgia,serif" font-weight="700" font-size="13" fill="#111">A♠</text><path d="M41 5l1.4 3 3 1.4-3 1.4-1.4 3-1.4-3-3-1.4 3-1.4zM14 8l1 2 2 1-2 1-1 2-1-2-2-1 2-1z" fill="#f2c14e"/></svg>`,
+  dealer:`<img class="rimg" src="r-dealer.png" alt="">`,
   faah:`<img class="rimg" src="r-faah.png" alt="">`,
   casino:`<svg viewBox="0 0 48 48"><rect x="4" y="16" width="20" height="20" rx="4" transform="rotate(-12 14 26)" fill="#f1ede2" stroke="#7a1d14" stroke-width="2"/><g fill="#c0392b" transform="rotate(-12 14 26)"><circle cx="9" cy="21" r="2"/><circle cx="14" cy="26" r="2"/><circle cx="19" cy="31" r="2"/></g><rect x="22" y="20" width="20" height="20" rx="4" transform="rotate(14 32 30)" fill="#f1ede2" stroke="#7a1d14" stroke-width="2"/><g fill="#c0392b" transform="rotate(14 32 30)"><circle cx="27" cy="25" r="2"/><circle cx="37" cy="25" r="2"/><circle cx="27" cy="35" r="2"/><circle cx="37" cy="35" r="2"/></g><circle cx="33" cy="9" r="7" fill="#f2c14e" stroke="#7a5a12" stroke-width="2"/><circle cx="33" cy="9" r="3.5" fill="none" stroke="#7a5a12" stroke-width="1.5" stroke-dasharray="2 1.6"/></svg>`
 };
@@ -1470,7 +1470,7 @@ const REACTS=[
   {s:"jaja",    t:"JAJAJA",     c:"#f2c14e", k:"burla"},
   {s:"bluff",   t:"BLUFF",      c:"#4f7fd6", k:"bluff"},
   {s:"ctm",     t:"CTM",        c:"#e24a35", k:"enojo", shake:true},
-  {s:"trampas", t:"TRAMPAS",    c:"#8a63d2", k:"enojo", shake:true},
+  {s:"dealer",  t:"DEALER HDP!",c:"#8a63d2", k:"enojo", shake:true},
   {s:"faah",    t:"FAAAAH",     c:"#7fb0c6", k:"faah"},
   {s:"casino",  t:"PAL’ CASINO",c:"#3fb37a", k:"casino"}
 ];
@@ -1482,7 +1482,7 @@ function renderReacts(T){
   const show = !!ST.db && humans>=2 && !!me();
   box.hidden=!show; if(!show) return;
   const wait = now()-RX.last < 2500;
-  box.html=REACTS.map((r,i)=>`<button data-react="${i}" aria-label="${esc(r.t)}" style="--rc:${r.c}"${wait?" disabled":""}><span class="ri">${RSVG[r.s]}</span><small>${esc(r.t).replace("’ ","’<br>")}</small></button>`).join("");
+  box.html=REACTS.map((r,i)=>`<button data-react="${i}" aria-label="${esc(r.t)}" style="--rc:${r.c}"${wait?" disabled":""}><span class="ri">${RSVG[r.s]}</span><small>${esc(r.t).replace(/[’]? /,m=>m.trim()+"<br>")}</small></button>`).join("");
   if(wait){ clearTimeout(renderReacts.t); renderReacts.t=setTimeout(()=>ST.T&&renderReacts(ST.T), 2500-(now()-RX.last)+30); }
 }
 function reactSound(r){
