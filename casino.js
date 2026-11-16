@@ -484,6 +484,19 @@ function hostAct(T,uid,a,present){
       const G=GAMES[T.game]; if(!G.move || d.game!==T.game) return false;
       return G.move(T,uid,d);
     }
+    case "merge": {
+      // El mismo apodo quedó dos veces (cel nuevo o app reinstalada): junta el lugar viejo en el actual
+      const q=T.players[d.from], nn=x=>String(x||"").trim().toLowerCase();
+      if(!p||p.out||!q||d.from===uid||q.bot||p.bot||nn(q.name)!==nn(p.name)) return false;
+      if(inHand(T,uid)||inHand(T,d.from)) return false;
+      if(T.g.bets && (T.g.bets[d.from]||T.g.bets[uid])) return false;
+      if(T.game==="pk" && T.g.ps && T.g.ps[d.from] && T.g.phase!=="wait") return false;
+      if(T.game==="bj" && T.g.hands && T.g.hands[d.from]) return false;
+      p.chips=r2(p.chips+(q.chips||0)); p.rebuys=(p.rebuys||0)+(q.rebuys||0)+1;   // mismas cuentas en el tablero
+      delete T.players[d.from]; T.order=T.order.filter(x=>x!==d.from);
+      if(T.g.ps) delete T.g.ps[d.from]; if(T.g.ready) delete T.g.ready[d.from];
+      sortOrder(T); addLog(T,`Se juntaron los dos lugares de ${p.name}`); return true;
+    }
     case "rebuy": {
       if(!p||p.out||inHand(T,uid)||d.n!==(p.rebuys||0)+1) return false;
       if(T.g.bets && T.g.bets[uid]) return false;
@@ -810,6 +823,9 @@ function ensureSeat(alias){
     const p=T.players[ST.uid];
     if(p && !p.out){ if(p.name!==alias) sendAct("join",{name:alias}); return; }
   }
+  // ¿Ya hay un lugar con este apodo de otro cel (app reinstalada, cel nuevo) y ese cel no está aquí? Es tuyo: tómalo
+  const mine=sameNameSeat(T,alias);
+  if(mine && !T.players[ST.uid]){ adopt(mine,false); if(!T.players[mine].out) return; }
   if(seatsUsed(T)<MAXP) sendAct("join",{name:alias});
   else toast("La mesa está llena: estás mirando");
 }
@@ -1014,7 +1030,7 @@ function renderInner(){
   if(UI.move && (T.game!==UI.move.d.game || T.g.k!==UI.move.d.k)) UI.move=null;
   $("mName").textContent=T.name; $("mCode").textContent="Código "+T.code;
   document.querySelectorAll("#tabs button").forEach(b=>{ b.classList.toggle("on",b.dataset.g===T.game); b.disabled = b.dataset.g!==T.game && (!me() || !canSwitch(T)); });
-  renderWho(); autoSeat(T); $("hostWarn").hidden=true; renderReacts(T);
+  renderWho(); autoSeat(T); $("hostWarn").hidden=true; renderReacts(T); setTimeout(()=>ST.T&&mergeDups(ST.T),3000);
   ({bac:renderBac,rul:renderRul,bj:renderBj,pk:renderPk})[T.game](T,T.g);
   renderSeats();
   renderHostbar(); renderLog(); renderConn(); renderAlert(T);
@@ -1136,9 +1152,17 @@ function renderWho(){
   box.hidden=true;
 }
 // Al entrar (o si se libera un lugar) te sientas solo
+function sameNameSeat(T,alias){
+  const pres=presentSet();
+  return Object.keys(T.players).find(id=>id!==ST.uid && !T.players[id].bot && normName(T.players[id].name)===normName(alias) && !(pres&&pres.has(id)));
+}
 function autoSeat(T){
-  if(me() || UI.dup || (ST.readOnly&&ST.canMulti) || !getAlias() || seatsUsed(T)>=MAXP) return;
+  if(me() || UI.dup || (ST.readOnly&&ST.canMulti) || !getAlias()) return;
   if(now()-(UI.joinAt||0)<2500) return;
+  // ¿Ya tienes lugar con este apodo desde otro cel o de antes de reinstalar? Ese es tuyo
+  const mine=!T.players[ST.uid] && sameNameSeat(T,getAlias());
+  if(mine){ adopt(mine,false); if(!T.players[mine].out) return; }
+  if(seatsUsed(T)>=MAXP) return;
   UI.joinAt=now(); sendAct("join",{name:getAlias()});
 }
 function takeBot(id){ const alias=getAlias(); mesaDo(T=>claimBot(T,id,ST.uid,alias)); }
@@ -1331,7 +1355,9 @@ function renderBj(T,g){
       const hs=g.hands[ST.uid], h=hs[g.turn.h], free=r2(p.chips-hs.reduce((a,x)=>a+x.bet,0));
       const canR=h.c.length===2&&hs.length===1, canD=!h.sa&&h.c.length===2&&free>=h.bet, canS=h.c.length===2&&hs.length<4&&bjVal(h.c[0])===bjVal(h.c[1])&&free>=h.bet, canH=!h.sa;
       const pend=!!UI.move;
-      $("controls").html=`<div class="wallet"><span>Tu mano <b>${bjTotTxt(h.c)}</b>${hs.length>1?` (mano ${g.turn.h+1} de ${hs.length})`:""}</span><span>Libres <b>${fmt(free)}</b></span></div>
+      // con más jugadores en la mesa, tu mano sale grande en tu turno
+      const big = ids.length>1 ? `<div class="mycards"><div class="cards">${cardsHTML(`bjH${gk(g)}${g.round}:${ST.uid}:${g.turn.h}`,h.c,{})}</div><div class="myhand lg">${esc(bjTotTxt(h.c))}${g.dealer[0]?` vs ${esc(cardTxt(g.dealer[0]))}`:""}</div></div>` : "";
+      $("controls").html=`${big}<div class="wallet"><span>Tu mano <b>${bjTotTxt(h.c)}</b>${hs.length>1?` (mano ${g.turn.h+1} de ${hs.length})`:""}</span><span>Libres <b>${fmt(free)}</b></span></div>
         <div class="acts bj5"><button class="btn go" data-move="hit"${!canH||pend?" disabled":""}>Pedir</button><button class="btn" data-move="stand"${pend?" disabled":""}>Plantarme</button><button class="btn" data-move="double"${!canD||pend?" disabled":""}>Doblar</button><button class="btn" data-move="split"${!canS||pend?" disabled":""}>Dividir</button><button class="btn warn" data-move="surrender"${!canR||pend?" disabled":""}>Rendirse</button></div>`;
     } else $("controls").html=`<div class="waiting">${g.turn?`Turno de ${esc(pname(T,g.turn.id))}`:"Juega el crupier"}</div>`;
   } else $("controls").html=betControls(T);
@@ -1389,7 +1415,8 @@ function renderPk(T,g){
     const toCall=r2(g.cur-s.bet), maxTo=r2(s.bet+p.chips), minTo=Math.min(maxTo, r2(g.cur+g.minR));
     const pend=!!UI.move;
     const potNow=pot;
-    $("controls").html=`<div class="myhand lg">${esc(myHandTxt(g))}</div><div class="wallet"><span>Te toca · ${toCall>0?"para igualar "+fmt(Math.min(toCall,p.chips)):"puedes pasar"}</span><span>Fichas <b>${fmt(p.chips)}</b></span></div>
+    const big = seated(T).length>1 && s && s.hole ? `<div class="mycards"><div class="cards">${cardsHTML(`pkH${gk(g)}${g.hand}:${ST.uid}`, s.hole, {})}</div><div class="myhand lg">${esc(myHandTxt(g))}</div></div>` : `<div class="myhand lg">${esc(myHandTxt(g))}</div>`;
+    $("controls").html=`${big}<div class="wallet"><span>Te toca · ${toCall>0?"para igualar "+fmt(Math.min(toCall,p.chips)):"puedes pasar"}</span><span>Fichas <b>${fmt(p.chips)}</b></span></div>
       <div class="acts"><button class="btn warn" data-move="fold"${pend?" disabled":""}>Retirarme</button><button class="btn" data-move="${toCall>0?"call":"check"}"${pend?" disabled":""}>${toCall>0?(toCall>=p.chips?"All-in "+fmt(p.chips):"Igualar "+fmt(toCall)):"Pasar"}</button></div>
       ${maxTo>g.cur?`<div class="rq"><button data-to="${minTo}">Mínimo</button><button data-to="${Math.min(maxTo,Math.round(g.cur+Math.max(g.minR,potNow/2)))}">½ bote</button><button data-to="${Math.min(maxTo,Math.round(g.cur+Math.max(g.minR,potNow)))}">Bote</button><button data-to="${maxTo}">All-in</button></div>
       <div class="raise"><input id="raiseIn" type="number" inputmode="numeric" min="${minTo}" max="${maxTo}" step="1" value="${minTo}" aria-label="Subir a"><button class="btn go" data-act="raise"${pend?" disabled":""}>${g.cur>0?"Subir":"Apostar"}</button></div>`:""}`;
@@ -1577,6 +1604,26 @@ function watchReacts(code){
 }
 function stopReacts(){ try{ RX.unsub&&RX.unsub(); }catch(e){} RX.unsub=null; RX.code=null; }
 document.addEventListener("click",e=>{ const b=e.target.closest&&e.target.closest("[data-react]"); if(b && !b.disabled) sendReact(+b.dataset.react); });
+
+// Si en la mesa hay otro lugar con tu mismo apodo y ese cel no está conectado, se junta con el tuyo
+const MERGED={};
+function mergeDups(T){
+  const p=T&&T.players[ST.uid]; if(!p||p.out||p.bot) return;
+  const pres=presentSet(); if(!pres) return;
+  Object.keys(T.players).forEach(id=>{
+    const q=T.players[id]; if(id===ST.uid||!q||q.bot||normName(q.name)!==normName(p.name)||pres.has(id)) return;
+    const key=T.code+":"+id; if(now()-(MERGED[key]||0)<20000) return; MERGED[key]=now();   // reintenta si estaba en plena mano
+    sendAct("merge",{from:id});
+  });
+}
+
+// El panel de abajo (fijo) deja un espacio de su mismo alto para que nunca tape la mesa
+(function(){
+  const dock=document.getElementById("dock"), sp=document.getElementById("dockSpace"); if(!dock||!sp) return;
+  const fit=()=>{ const h=dock.offsetHeight; if(sp.style.height!==h+"px") sp.style.height=h+"px"; };
+  if(window.ResizeObserver) new ResizeObserver(fit).observe(dock);
+  addEventListener("resize",fit); setInterval(fit,1000); fit();
+})();
 // ================= Solitario (Klondike) con niveles =================
 const SOLV = [ // dificultad por nivel: robar, vueltas al mazo (0 = sin límite), deshacer, Ases ya puestos
   {name:"Aprendiz", draw:1, passes:0, undo:99, aces:true},

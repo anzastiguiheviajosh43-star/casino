@@ -68,6 +68,9 @@ h1,h2,h3{margin:0;font-weight:400}
 .myhand{display:inline-block;width:fit-content;max-width:100%;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;line-height:1.3;font:600 .78rem var(--ui);letter-spacing:.04em;color:var(--brass);background:transparent;border:1px solid var(--brass);border-radius:99px;padding:3px 10px;align-self:flex-start;flex:none}
 .myhand.lg{align-self:center;font-size:.9rem;padding:5px 14px}
 .myhand:empty{display:none}
+.mycards{display:flex;align-items:center;justify-content:center;gap:12px}
+.mycards .cards{min-height:0;flex-wrap:nowrap}
+.mycards .card{width:58px;height:84px;font-size:1.15rem}
 /* Solitario */
 .sol{display:flex;flex-direction:column;gap:12px}
 .sol .mname span{font:500 .8rem var(--mono);color:var(--muted)}
@@ -172,7 +175,7 @@ h1,h2,h3{margin:0;font-weight:400}
 .banner{text-align:center;min-height:1.7rem;font:400 1.15rem var(--display);letter-spacing:.04em}
 .banner small{display:block;font:500 .85rem var(--mono);margin-top:3px}
 .controls{display:flex;flex-direction:column;gap:10px}
-.dock{position:sticky;bottom:0;z-index:6;display:flex;flex-direction:column;gap:10px;background:var(--felt-deep);border-top:1px solid var(--felt-line);border-radius:18px 18px 0 0;padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -14px 26px rgba(0,0,0,.4)}
+.dock{position:fixed;bottom:0;left:50%;transform:translateX(-50%);width:min(600px,100%);box-sizing:border-box;z-index:6;display:flex;flex-direction:column;gap:10px;background:var(--felt-deep);border-top:1px solid var(--felt-line);border-radius:18px 18px 0 0;padding:10px 10px calc(10px + env(safe-area-inset-bottom,0px));box-shadow:0 -14px 26px rgba(0,0,0,.4)}
 .dock.alert{border:2px solid var(--brass);border-bottom:0;box-shadow:0 -10px 34px rgba(212,178,92,.38)}
 .callout{display:flex;align-items:center;justify-content:center;gap:10px;background:var(--brass);color:#1c1608;border-radius:12px;padding:9px 12px;font:400 1.3rem var(--display);letter-spacing:.03em;text-align:center;animation:pop .35s ease-out both,glow 1.5s ease-in-out .35s infinite}
 .callout small{font:600 .8rem var(--ui);letter-spacing:.06em;text-transform:uppercase;opacity:.8}
@@ -417,6 +420,7 @@ h1,h2,h3{margin:0;font-weight:400}
     <div class="hostwarn who" id="whoBox" hidden></div>
     <div class="hostwarn" id="hostWarn" hidden><span id="hostWarnTxt">El anfitrión se desconectó.</span><button class="btn sm go" id="takeHost">Ser el anfitrión</button></div>
     <div class="felt" id="game"></div>
+    <div id="dockSpace" aria-hidden="true"></div>
     <div class="dock" id="dock"><div class="callout" id="callout" hidden></div><div class="controls" id="controls"></div></div>
     <div class="hostbar" id="hostbar"></div>
     <div class="log" id="log"></div>
