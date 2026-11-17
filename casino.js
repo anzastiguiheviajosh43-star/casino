@@ -1576,8 +1576,7 @@ const RX={unsub:null, seen:{}, init:false, last:0, code:null};
 function reactRef(code){ return ST.db ? ST.db.collection("mesas/"+code+"/react") : null; }
 function renderReacts(T){
   const box=$("reacts"); if(!box) return;
-  const humans=seated(T).filter(id=>!T.players[id].bot).length;
-  const show = !!ST.db && humans>=2 && !!me();
+  const show = !!ST.db && !!me();   // siempre que estés sentado, aunque sea solo con bots
   box.hidden=!show; if(!show) return;
   const wait = now()-RX.last < 2500;
   box.html=REACTS.map((r,i)=>`<button data-react="${i}" aria-label="${esc(r.t)}" style="--rc:${r.c}"${wait?" disabled":""}><span class="ri">${RSVG[r.s]}</span><small>${r.tb||esc(r.t).replace(/[’]? /,m=>m.trim()+"<br>")}</small></button>`).join("");
@@ -1634,6 +1633,10 @@ function sendReact(i){
   const T=ST.T; if(!T || !me() || now()-RX.last<2500) return;
   RX.last=now(); renderReacts(T);
   showReact(ST.uid, i);                                    // lo ves al instante en tu lugar
+  // si hay bots en la mesa, a veces uno te contesta con otro sticker
+  const bots=seated(T).filter(id=>T.players[id].bot);
+  if(bots.length && Math.random()<0.45){ const bid=bots[Math.floor(Math.random()*bots.length)], bi=Math.floor(Math.random()*REACTS.length);
+    setTimeout(()=>{ if(ST.T&&ST.T.code===T.code) showReact(bid, bi); }, 1400+Math.random()*1200); }
   const ref=reactRef(T.code); if(!ref) return;
   ref.doc(ST.uid).set({i, at:Date.now(), name:getAlias()}).catch(()=>{});
 }
