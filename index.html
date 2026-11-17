@@ -13,7 +13,7 @@
 <link rel="apple-touch-icon" href="icon-180.png">
 <style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
 <title>Mesa de Cuatro</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&display=swap">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Silkscreen:wght@400;700&display=swap">
 <style>
 /* Layout: una columna tipo mesa de casino — barra de mesa, 4 asientos, paño del juego, controles abajo */
 :root{
@@ -316,75 +316,191 @@ h1,h2,h3{margin:0;font-weight:400}
 .raise{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:8px}
 .rq{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
 .rq button{padding:7px 2px;border-radius:9px;border:1px solid var(--felt-line);background:var(--panel);font:500 .8rem var(--ui);cursor:pointer}
+/* ===================== Menú nuevo ===================== */
+#l2bgimg,#l2bg{display:none}
+body.l2on #l2bgimg{display:block;position:fixed;inset:0;z-index:0;background:url(fondo.jpg) center/cover;image-rendering:pixelated;filter:brightness(.42) saturate(1.05)}
+body.l2on #l2bg{display:block;position:fixed;inset:0;width:100%;height:100%;z-index:0;image-rendering:pixelated;pointer-events:none}
+body.l2on::before{content:"";position:fixed;inset:0;z-index:0;background:linear-gradient(rgba(10,20,16,.15),rgba(8,18,14,.55));pointer-events:none}
+body.l2on .app{position:relative;z-index:1}
+body.l2lock{overflow:hidden}
+canvas.pix,img.l2ci{image-rendering:pixelated}
+.lobby{gap:12px}
+.l2sign{position:relative;width:78%;margin:2px auto 0;filter:drop-shadow(0 0 14px rgba(255,60,160,.35)) drop-shadow(0 10px 18px rgba(0,0,0,.6))}
+.l2sign canvas{width:100%;height:auto;aspect-ratio:124/78;display:block}
+.l2signsub{position:absolute;left:0;right:0;bottom:9.5%;text-align:center;font:700 9px "Silkscreen",var(--mono);letter-spacing:1.5px;color:#ffd0ec;text-shadow:0 0 4px #ff3da5,0 0 10px #ff3da5;animation:l2neon 2.4s infinite}
+@keyframes l2neon{0%,47%,50%,100%{opacity:1}48%{opacity:.55}}
+.l2gear{position:absolute;top:-4px;right:-40px;width:38px;height:38px;border-radius:50%;background:#0b241c;border:1px solid var(--felt-line);font-size:18px;display:grid;place-items:center;cursor:pointer;padding:0}
+.l2panel{background:rgba(6,22,17,.8);border:1px solid var(--felt-line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
+.l2panel h2{margin:0;font:400 1.3rem var(--display)}
+.l2link{background:none;border:0;color:var(--brass);font:600 .88rem var(--ui);cursor:pointer;padding:4px;align-self:center}
+img.l2ci{width:20px;height:20px;flex:none;display:inline-block;vertical-align:middle}
+.l2chip{display:inline-flex;line-height:0}
+/* podio */
+.l2podium{display:grid;grid-template-columns:1fr 1.15fr 1fr;align-items:end;gap:6px;margin-top:2px}
+.l2pod{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:0}
+.l2pod .nm{font-weight:700;font-size:.92rem;max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.l2pod .am{font:500 .76rem var(--mono);font-variant-numeric:tabular-nums}
+.l2pod .st{width:100%;border-radius:10px 10px 4px 4px;display:grid;place-items:center;font:700 17px "Silkscreen",var(--mono);color:#1b1407;box-shadow:inset 0 -6px 0 rgba(0,0,0,.18)}
+.l2pod.p1 .st{height:52px;background:linear-gradient(#ffe08a,#d4a53a)}.l2pod.p2 .st{height:38px;background:linear-gradient(#e6ecef,#9aa8b0)}.l2pod.p3 .st{height:28px;background:linear-gradient(#f0b07a,#b86a32)}
+.l2pod .l2chip img{width:42px;height:42px}.l2pod.p1 .l2chip img{width:50px;height:50px}.l2pod.p3 .l2chip img{width:40px;height:40px}
+.l2crown{font-size:16px;margin-bottom:-3px;filter:drop-shadow(0 0 6px #ffcf5a)}
+.l2more{display:flex;flex-direction:column;gap:4px}
+.l2lr{display:flex;align-items:center;gap:9px;padding:5px 8px;border-radius:10px;background:rgba(255,255,255,.03)}
+.l2lr .k{font:700 11px "Silkscreen",var(--mono);color:var(--muted);width:18px}.l2lr .n{flex:1;font-weight:600;min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.l2lr .v{font:500 .82rem var(--mono)}
+.up{color:var(--good)}.down{color:var(--bad)}
+/* tu tarjeta */
+.l2me{background:linear-gradient(135deg,rgba(212,178,92,.16),rgba(6,22,17,.85) 55%);border-color:#6d5a2a}
+.l2metop{display:flex;gap:14px;align-items:center}
+.l2mechip{display:flex;flex-direction:column;align-items:center;gap:7px}
+.l2mechip .l2chip img{width:84px;height:84px}
+.l2name{display:flex;align-items:center;gap:8px}
+.l2name input{flex:1;min-width:0;background:transparent;border:0;border-bottom:1px dashed rgba(212,178,92,.5);border-radius:0;color:var(--ink);font:400 1.75rem var(--display);padding:2px 0;outline:none}
+.l2pen{font-size:15px;border:1px solid var(--felt-line);border-radius:8px;padding:2px 6px;pointer-events:none}
+.l2rank{font:700 10.5px "Silkscreen",var(--mono);color:var(--brass);letter-spacing:1px;margin-top:5px}
+.l2stats{display:grid;grid-template-columns:1fr 1fr;gap:8px}.l2stats:empty{display:none}
+.l2stats div{background:rgba(0,0,0,.28);border-radius:12px;padding:8px 10px}.l2stats span{font-size:.72rem;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}.l2stats b{display:block;font:600 1.1rem var(--mono)}
+.l2resume{width:100%;display:flex;flex-direction:column;align-items:center;gap:2px}.l2resume small{font:500 .74rem var(--ui);opacity:.75;letter-spacing:0;text-transform:none}
+/* mesas abiertas */
+.l2mcard{display:flex;align-items:center;gap:11px;padding:9px;border-radius:14px;background:rgba(0,0,0,.25);border:1px solid rgba(47,107,85,.6)}
+.l2mcard .t{flex:1;min-width:0}.l2mcard .t b{display:block;font-size:1rem;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.l2mcard .t>span{color:var(--muted);font-size:.8rem}
+.l2who{display:flex;margin-top:4px}.l2who img.l2ci{margin-right:-5px;filter:drop-shadow(0 1px 1px rgba(0,0,0,.5))}
+.l2mbtns{display:flex;gap:6px;flex:none}
+.l2gi{display:grid;place-items:center;border-radius:10px;background:#0b241c;border:1px solid var(--felt-line)}
+.l2gi.sm{width:44px;height:44px;flex:none}.l2gi.sm canvas{width:38px;height:38px}
+/* juegos */
+.l2games{display:grid;grid-template-columns:repeat(5,1fr);gap:7px}
+.l2games button{display:flex;flex-direction:column;align-items:center;gap:5px;background:none;border:0;color:var(--muted);font:600 .74rem var(--ui);padding:0;cursor:pointer;min-width:0}
+.l2games .l2gi{width:100%;aspect-ratio:1}.l2games .l2gi canvas{width:86%;height:86%}
+.l2games .l2sol .l2gi{border-color:var(--brass);background:rgba(212,178,92,.12)}
+/* Mesa nueva */
+.sl-title{text-align:center}
+.sl-title b{font:700 19px "Silkscreen",var(--mono);letter-spacing:3px;color:#ffd75e;text-shadow:0 0 8px rgba(255,180,40,.5)}
+.sl-frame{position:relative;padding:5px;border-radius:16px;background:#130307;border:3px solid #ff2d3c;box-shadow:0 0 10px rgba(255,45,60,.7),inset 0 0 10px rgba(255,45,60,.4)}
+.sl-in{position:relative;display:grid;grid-template-columns:1fr 1fr 1.25fr;gap:6px;padding:6px;border-radius:11px;border:2px solid #31d6ff;box-shadow:0 0 8px rgba(49,214,255,.8),inset 0 0 8px rgba(49,214,255,.45)}
+.sl-col{position:relative;z-index:1;display:flex;flex-direction:column;align-items:center;min-width:0}
+.sl-lbl{font:700 9px "Silkscreen",var(--mono);letter-spacing:1px;color:#9fe9ff;margin-bottom:4px;text-shadow:0 0 6px rgba(49,214,255,.8)}
+.sl-reel{position:relative;width:100%;height:168px;overflow:hidden;border-radius:6px;background:#f4f1ea;touch-action:none;cursor:grab;box-shadow:inset 0 0 0 1px rgba(0,0,0,.4);-webkit-user-select:none;user-select:none}
+.sl-reel .strip{will-change:transform}
+.sl-reel .cell{height:56px;display:flex;flex-direction:column;align-items:center;justify-content:center;color:#2a0a10}
+.sl-reel .cell b{font:700 .74rem var(--ui);white-space:nowrap;letter-spacing:0}
+.sl-reel .cell .ri{width:34px;height:34px;display:block}.sl-reel .cell .ri canvas{width:100%;height:100%}
+.sl-reel .cell .money{font:700 12px "Silkscreen",var(--mono);color:#7a0c1e}
+.sl-reel .cell.name b{white-space:normal;text-align:center;line-height:1.1;font:400 .85rem var(--display);padding:0 4px}
+.sl-shade{position:absolute;inset:0;pointer-events:none;background:linear-gradient(rgba(10,10,20,.82),rgba(10,10,20,.25) 22%,rgba(255,255,255,0) 40%,rgba(255,255,255,0) 60%,rgba(10,10,20,.25) 78%,rgba(10,10,20,.82)),linear-gradient(90deg,rgba(0,0,0,.35),rgba(255,255,255,.08) 25%,rgba(255,255,255,.08) 75%,rgba(0,0,0,.35))}
+.sl-pay{position:absolute;z-index:0;left:-8px;right:-8px;top:calc(6px + 15px + 84px - 1px);height:2px;background:#31d6ff;box-shadow:0 0 6px #31d6ff;pointer-events:none}
+.sl-arw{position:absolute;z-index:3;top:calc(6px + 15px + 84px - 7px);width:0;height:0;border-top:7px solid transparent;border-bottom:7px solid transparent;filter:drop-shadow(0 0 4px #31d6ff)}
+.sl-arw.l{left:-2px;border-left:9px solid #31d6ff}.sl-arw.r{right:-2px;border-right:9px solid #31d6ff}
+.sl-sum{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center}.sl-sum b{font-size:1.05rem}
+.sl-sum .l2link{color:var(--muted);font-weight:500}
+.sl-sum input{width:100%;margin-top:6px}
+.sl-acts{display:flex;gap:10px;justify-content:center}
+.sl-acts .btn{flex:none;padding:13px 18px;text-transform:uppercase;letter-spacing:.06em;font-weight:700}
+.sl-rand{background:#130307;border-color:#ff2d3c;color:#ffd0d4;box-shadow:0 0 8px rgba(255,45,60,.45)}
+/* hojas (ajustes y ficha) */
+.l2sheet{position:fixed;inset:0;z-index:50;background:rgba(4,10,8,.7);display:flex;align-items:flex-end;justify-content:center;backdrop-filter:blur(3px);-webkit-backdrop-filter:blur(3px)}
+.l2sheet[hidden]{display:none}
+.l2sh{width:min(600px,100%);max-height:92dvh;overflow:auto;background:#0b2018;border:1px solid var(--felt-line);border-radius:22px 22px 0 0;padding:16px 16px calc(16px + env(safe-area-inset-bottom,0px));display:flex;flex-direction:column;gap:10px}
+.l2sh h2{margin:0;font:400 1.3rem var(--display)}
+.l2sh>*{flex-shrink:0}
+.l2prev{display:flex;justify-content:center;padding:4px 0}.l2prev canvas{filter:drop-shadow(0 10px 18px rgba(0,0,0,.55))}
+.l2presets{display:flex;gap:10px;overflow-x:auto;padding:4px 2px}
+.l2presets button{display:flex;flex-direction:column;align-items:center;gap:4px;background:none;border:0;color:var(--muted);font:500 .72rem var(--ui);flex:none;width:62px;cursor:pointer;padding:0}
+.l2presets button.on canvas{outline:2px solid var(--brass);outline-offset:3px;border-radius:50%}
+.l2sw{display:flex;gap:9px;flex-wrap:wrap}.l2sw button{width:30px;height:30px;border-radius:50%;border:2px solid rgba(255,255,255,.15);cursor:pointer;padding:0}.l2sw button.on{outline:2px solid var(--brass);outline-offset:2px}
+.l2pats{display:grid;grid-template-columns:repeat(4,1fr);gap:8px}
+.l2pats button,.l2ems button{background:#0a1a14;border:1px solid var(--felt-line);border-radius:12px;padding:6px 3px;display:flex;flex-direction:column;align-items:center;gap:3px;font:500 .72rem var(--ui);color:var(--muted);cursor:pointer}
+.l2pats button.on,.l2ems button.on{border-color:var(--brass);background:rgba(212,178,92,.12);color:var(--ink)}
+.l2ems{display:grid;grid-template-columns:repeat(4,1fr);gap:7px}.l2ems small{font-size:.7rem}
+.l2seatprev{display:flex;align-items:center;gap:10px;background:rgba(0,0,0,.3);border:2px solid var(--brass);border-radius:14px;padding:9px 12px}
+.l2seatprev b{display:block}.l2seatprev small{color:var(--muted);font-size:.78rem}
+.seat .nm img.l2ci{width:18px;height:18px}
 </style>
 
+<div id="l2bgimg" aria-hidden="true"></div><canvas id="l2bg" aria-hidden="true"></canvas>
 
 </head>
 <body>
 <div class="app">
   <section class="lobby" id="lobby">
-    <header class="lob-head">
-      <div class="suits" aria-hidden="true">♠ ♥ ♦ ♣</div>
-      <h1>Mesa de Cuatro</h1>
-      <p>Casino entre amigos para 1 a 4 jugadores: baccarat, ruleta, blackjack y póker. Se juega con fichas de mentira.</p>
-    </header>
+    <div class="l2sign" id="l2sign"><canvas id="signcv" class="pix" aria-label="Mesa de Cuatro"></canvas><div class="l2signsub">♠ CASINO ENTRE AMIGOS ♦</div>
+      <button class="l2gear" id="gearBtn" aria-label="Ajustes">⚙️</button></div>
 
-    <div class="panel">
-      <label class="lbl" for="alias">Tu apodo en la mesa</label>
-      <input id="alias" maxlength="16" placeholder="Cambia tu apodo" autocomplete="off">
-    </div>
-
-    <div class="panel" id="resumeBox" hidden>
-      <h2>Tu última mesa</h2>
-      <div class="mitem"><div class="t"><b id="resName">—</b><span id="resInfo"></span></div><button class="btn go sm" id="resGo">Volver</button></div>
-    </div>
-
-    <div class="panel">
-      <h2>Abrir una mesa</h2>
-      <label class="lbl" for="mesaName">Nombre</label>
-      <input id="mesaName" maxlength="28" placeholder="Ponle nombre a tu mesa" autocomplete="off">
-      <span class="lbl">Fichas para cada jugador</span>
-      <div class="quick" id="buyQuick">
-        <button data-b="5000">5,000</button><button data-b="10000" class="on">10,000</button><button data-b="50000">50,000</button><button data-b="100000">100,000</button>
-      </div>
-      <span class="lbl">Empezar con</span>
-      <div class="gpick" id="gpick">
-        <button data-g="bac" class="on"><b>B</b><span>Baccarat</span></button>
-        <button data-g="rul"><b>R</b><span>Ruleta</span></button>
-        <button data-g="bj"><b>21</b><span>Blackjack</span></button>
-        <button data-g="pk"><b>P</b><span>Póker</span></button>
-      </div>
-      <button class="btn go" id="create">Abrir mesa</button>
-      <p class="note" id="capNote">Conectando…</p>
-    </div>
-
-    <div class="panel" id="boardBox">
-      <div class="row" style="justify-content:space-between"><h2>Tablero</h2>
+    <div class="l2panel" id="boardBox">
+      <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><h2>🏆 Tablero</h2>
         <div class="seg" id="boardSort"><button data-sort="chips" class="on">Fichas</button><button data-sort="net">Ganancia</button></div></div>
-      <div class="lb" id="board"><div class="empty">Cargando…</div></div>
-      <p class="note">Suma, por apodo, las fichas de cada jugador en todas las mesas guardadas. La ganancia descuenta lo que le dieron al entrar y sus recompras.</p>
+      <div id="board"><div class="empty">Cargando…</div></div>
     </div>
 
-    <div class="panel">
-      <h2>Mesas abiertas</h2>
-      <label class="toggle"><input type="checkbox" id="bellOn" checked> Sonidos: campanita cuando alguien abra una mesa y aviso cuando te toque</label>
-      <div class="pushbox"><button class="btn sm" id="pushBtn" hidden>🔔 Activar avisos en este cel</button><p class="note" id="pushNote"></p></div>
+    <div class="l2panel l2me">
+      <div class="l2metop">
+        <div class="l2mechip"><span id="myChip" class="l2chip"></span><button class="btn sm" id="chipBtn">🎨 Mi ficha</button></div>
+        <div style="min-width:0;flex:1">
+          <label class="lbl" for="alias">Tu apodo</label>
+          <div class="l2name"><input id="alias" maxlength="16" placeholder="Escribe tu apodo" autocomplete="off"><span class="l2pen" aria-hidden="true">✏️</span></div>
+          <div class="l2rank" id="myRank"></div>
+        </div>
+      </div>
+      <div class="l2stats" id="myStats"></div>
+      <div id="resumeBox" hidden><button class="btn go l2resume" id="resGo">↩ Volver a “<span id="resName">—</span>”<small id="resInfo"></small></button></div>
+    </div>
+
+    <div class="l2panel">
+      <div class="row" style="justify-content:space-between"><h2>Mesas abiertas</h2><span class="note" id="pushMini"></span></div>
       <div class="mlist" id="mlist"><div class="empty">Buscando mesas…</div></div>
       <div class="raise">
-        <input id="codeIn" maxlength="4" placeholder="Código, ej. K7QM" autocomplete="off" style="text-transform:uppercase">
+        <input id="codeIn" maxlength="4" placeholder="¿Tienes código? Ej. K7QM" autocomplete="off" style="text-transform:uppercase">
         <button class="btn" id="codeGo">Entrar</button>
       </div>
-      <p class="note">Para jugar con amigos: mándales el link de la app (que la agreguen a su pantalla de inicio) y diles el código de tu mesa. Cada quien usa un apodo distinto.</p>
-      <p class="note">La mesa avanza sola mientras alguien tenga la app abierta: no hay anfitrión. Si alguien bloquea el cel, los demás siguen jugando.</p>
     </div>
 
-    <div class="panel solcard">
-      <div class="row" style="justify-content:space-between;flex-wrap:nowrap">
-        <div style="min-width:0"><h2>Solitario</h2><span class="note" id="solCardInfo">Para jugar solo, sin apostar. Sube de nivel cada vez que lo resuelves.</span></div>
-        <button class="btn go" id="solOpen">Jugar</button>
+    <div class="l2panel" id="slot2">
+      <div class="sl-title"><b>MESA NUEVA</b></div>
+      <div id="slotReels"></div>
+      <div class="sl-sum"><b id="s2T"></b><button class="l2link" id="s2Edit">“<span id="s2N"></span>” ✏️ cambiar nombre</button>
+        <input id="s2Name" maxlength="28" placeholder="Nombre de tu mesa" autocomplete="off" hidden></div>
+      <div class="sl-acts"><button class="btn sl-rand" id="s2Rand">🎲 Aleatorio</button><button class="btn go" id="create">Confirmar mesa</button></div>
+      <p class="note" style="text-align:center">Gira cada rueda con el dedo para elegir.</p>
+    </div>
+    <div hidden>
+      <input id="mesaName" maxlength="28">
+      <div class="quick" id="buyQuick"><button data-b="5000">5,000</button><button data-b="10000" class="on">10,000</button><button data-b="50000">50,000</button><button data-b="100000">100,000</button></div>
+      <div class="gpick" id="gpick"><button data-g="bac" class="on">B</button><button data-g="rul">R</button><button data-g="bj">21</button><button data-g="pk">P</button></div>
+    </div>
+
+    <div class="l2panel">
+      <h2>Juegos</h2>
+      <div class="l2games" id="l2games">
+        <button data-pick="bac"><span class="l2gi" data-gi="bac"></span>Baccarat</button>
+        <button data-pick="rul"><span class="l2gi" data-gi="rul"></span>Ruleta</button>
+        <button data-pick="bj"><span class="l2gi" data-gi="bj"></span>Blackjack</button>
+        <button data-pick="pk"><span class="l2gi" data-gi="pk"></span>Póker</button>
+        <button id="solOpen" class="l2sol"><span class="l2gi" data-gi="sol"></span>Solitario</button>
       </div>
+      <p class="note" id="solCardInfo">Para jugar solo, sin apostar.</p>
     </div>
   </section>
+
+  <div class="l2sheet" id="setSheet" hidden><div class="l2sh">
+    <div class="row" style="justify-content:space-between"><h2>⚙️ Ajustes</h2><button class="btn sm" data-close>Listo</button></div>
+    <label class="toggle"><input type="checkbox" id="bellOn" checked> Sonidos: campanita cuando alguien abra una mesa y aviso cuando te toque</label>
+      <div class="pushbox"><button class="btn sm" id="pushBtn" hidden>🔔 Activar avisos en este cel</button><p class="note" id="pushNote"></p></div>
+    <div class="pushbox"><button class="btn sm" id="pushBtn" hidden>🔔 Activar avisos en este cel</button><p class="note" id="pushNote"></p></div>
+    <p class="note" id="capNote">Conectando…</p>
+    <p class="note">Para jugar con amigos: mándales el link de la app y diles el código de tu mesa. Cada quien usa un apodo distinto.</p>
+    <p class="note">La mesa avanza sola mientras alguien tenga la app abierta: no hay anfitrión.</p>
+  </div></div>
+
+  <div class="l2sheet" id="chipSheet" hidden><div class="l2sh">
+    <div class="row" style="justify-content:space-between"><h2>🎨 Personaliza tu ficha</h2><button class="btn go sm" id="chipSave">Guardar</button></div>
+    <div class="l2prev"><span id="chipPrev" class="l2chip"></span></div>
+    <span class="lbl">Diseños de casino</span><div class="l2presets" id="chipPresets"></div>
+    <span class="lbl">Color de la ficha</span><div class="l2sw" id="chipBase"></div>
+    <span class="lbl">Borde</span><div class="l2pats" id="chipPats"></div>
+    <span class="lbl">Color del borde</span><div class="l2sw" id="chipEdge"></div>
+    <span class="lbl">Centro de tu ficha</span><div class="l2ems" id="chipEms"></div>
+    <span class="lbl">Así te ven en la mesa</span><div class="l2seatprev"><span id="chipSeat" class="l2chip"></span><div><b id="chipSeatName">Tú</b><small>tu lugar en la mesa</small></div></div>
+    <button class="btn" data-close>Cancelar</button>
+  </div></div>
 
   <section class="sol" id="sol" hidden>
     <div class="topbar">

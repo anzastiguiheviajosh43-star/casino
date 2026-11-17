@@ -29,6 +29,13 @@
       update: async d=>{ const cur=unpack((await r.get()).data())||{}; await r.set(pack(Object.assign(cur,JSON.parse(JSON.stringify(d))))); return {path}; },
       delete: async()=>{ await r.delete(); },
       onSnapshot:(cb,err)=>r.onSnapshot(s=>cb(wrapSnap(s)), e=>err&&err(e)),
+      // cambio atómico: Firebase lee, aplica y guarda sin que otro cel lo pise (si chocan, lo reintenta solo)
+      txn: fn=>fs.runTransaction(async tx=>{
+        const s=await tx.get(r); if(!s.exists) return {ok:false, T:null};
+        const T=unpack(s.data()); const ok=!!fn(T);
+        if(ok) tx.set(r, pack(JSON.parse(JSON.stringify(T))));
+        return {ok, T};
+      }),
       collection:p=>collRef(path+"/"+p)
     };
   }
