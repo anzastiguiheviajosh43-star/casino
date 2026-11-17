@@ -1221,7 +1221,7 @@ function renderHostbar(){
 }
 
 // Controles comunes de los juegos de apuesta
-function chipsRow(){ return `<div class="chips">${CHIPS.map(v=>`<button class="chip${UI.chip===v?" sel":""}" data-chip="${v}" aria-label="Ficha de ${v}">${fmtK(v)}</button>`).join("")}</div>`; }
+function chipsRow(){ return `<div class="chips">${CHIPS.map(v=>window.L2 ? (bc=>`<button class="chip l2bet${UI.chip===v?" sel":""}" data-chip="${v}" aria-label="Ficha de ${v}"><img alt="" src="${bc.url}"><b style="color:${bc.ink}">${bc.label}</b></button>`)(L2.betChip(v)) : `<button class="chip${UI.chip===v?" sel":""}" data-chip="${v}" aria-label="Ficha de ${v}">${fmtK(v)}</button>`).join("")}</div>`; }
 function betControls(T){
   const g=T.g, p=me();
   if(!p) return spectate(T);
@@ -1266,7 +1266,7 @@ function renderBac(T,g){
   const win=res&&msR===0?g.res:null;
   const ban = res ? `<div class="banner${late(msR)}">${g.res==="T"?`Empate ${g.pt} a ${g.bt}`:`Gana ${g.res==="P"?"Jugador":"Banca"} ${Math.max(g.pt,g.bt)} a ${Math.min(g.pt,g.bt)}`}${myResult(T,g)}</div><div class="${late(msR)}">${othersResult(T,g)}</div>`
     : `<div class="banner">Hagan sus apuestas</div>`;
-  const spot=(k,n,pay)=>`<button class="spot ${k}${win===k||(win==="T"&&k==="T")?" won":""}" data-bet="${k}"${g.phase!=="bet"||!me()?" disabled":""}><span class="n">${n}</span><span class="pay">${pay}</span><span class="bet">${mine[k]?fmt(mine[k]):""}</span><span class="mk">${othersDots(T,g,k)}</span></button>`;
+  const spot=(k,n,pay)=>`<button class="spot ${k}${win===k||(win==="T"&&k==="T")?" won":""}" data-bet="${k}"${g.phase!=="bet"||!me()?" disabled":""}><span class="n">${n}</span><span class="pay">${pay}</span><span class="bet">${mine[k]?`${window.L2?`<img class="l2mini" alt="" src="${L2.betChipURL(UI.chip)}">`:""}${fmt(mine[k])}`:""}</span><span class="mk">${othersDots(T,g,k)}</span></button>`;
   $("game").html= `${ban}
     <div class="bac-tbl">
       <div class="bac-side P${win==="P"||win==="T"?" win":""}"><h3>Jugador</h3><div class="tot${late(msR)}">${res?g.pt:"–"}</div><div class="cards">${pc}</div></div>
@@ -1332,7 +1332,7 @@ function renderRul(T,g){
   $("rHist").html= hist.slice(0,14).map(n=>`<span class="rh ${rcls(n)}">${n}</span>`).join("");
   $("rBan").html= res ? (shown?`<div class="banner">${g.num}${g.num===0?" verde":REDS.has(g.num)?" rojo":" negro"}${myResult(T,g)}</div>${othersResult(T,g)}`:`<div class="banner">Girando…</div>`) : `<div class="banner">Hagan sus apuestas</div>`;
   const mine=g.phase==="bet"?UI.bets:((g.bets||{})[ST.uid]||{}), dis=g.phase!=="bet"||!me();
-  const cell=(k,label,cls,style)=>{ const hit=shown&&rulMult(k,g.num)>0; return `<button class="cell ${cls}${hit?" hit":""}" data-bet="${k}" style="${style}"${dis?" disabled":""}><span class="lab">${label}</span>${mine[k]?`<span class="my">${fmtK(mine[k])}</span>`:""}<span class="oth">${othersDots(T,g,k)}</span></button>`; };
+  const cell=(k,label,cls,style)=>{ const hit=shown&&rulMult(k,g.num)>0; return `<button class="cell ${cls}${hit?" hit":""}" data-bet="${k}" style="${style}"${dis?" disabled":""}><span class="lab">${label}</span>${mine[k]?`<span class="my">${window.L2?`<img class="l2mini" alt="" src="${L2.betChipURL(UI.chip)}">`:""}${fmtK(mine[k])}</span>`:""}<span class="oth">${othersDots(T,g,k)}</span></button>`; };
   let b=cell("n0","0","z","grid-column:3/6;grid-row:1");
   for(let r=0;r<12;r++) for(let c=1;c<=3;c++){ const n=r*3+c; b+=cell("n"+n,n,REDS.has(n)?"r":"k",`grid-column:${c+2};grid-row:${r+2}`); }
   [["d1","1ª 12"],["d2","2ª 12"],["d3","3ª 12"]].forEach(([k,l],i)=>b+=cell(k,l,"o vert",`grid-column:2;grid-row:${i*4+2}/span 4`));
@@ -1376,7 +1376,7 @@ function renderBj(T,g){
   $("game").html= `
     <div class="bj-dealer"><div class="lbl">Crupier</div><div class="cards">${dc}</div><div class="tot${late(res?msR:0)}">${dTot}</div></div>
     ${res?`<div class="banner${late(msR)}">${g.dbj?"El crupier tiene blackjack":bjTot(g.dealer).t>21?"El crupier se pasó":"Crupier con "+bjTot(g.dealer).t}${myResult(T,g)}</div>`:g.phase==="bet"?`<div class="banner">Hagan sus apuestas</div>`:""}
-    ${g.phase==="bet" ? `<button class="betcircle" data-bet="m"${!me()?" disabled":""}><span>Tu apuesta</span><b>${UI.bets.m?fmt(UI.bets.m):"$0"}</b></button>${betSum?`<div class="waiting">${betSum}</div>`:""}` : `<div class="bj-hands">${hands}</div>`}
+    ${g.phase==="bet" ? `<button class="betcircle" data-bet="m"${!me()?" disabled":""}><span>Tu apuesta</span><b>${UI.bets.m&&window.L2?`<img class="l2mini" alt="" src="${L2.betChipURL(UI.chip)}">`:""}${UI.bets.m?fmt(UI.bets.m):"$0"}</b></button>${betSum?`<div class="waiting">${betSum}</div>`:""}` : `<div class="bj-hands">${hands}</div>`}
     <p class="note">6 mazos · quedan ${shoeLen(g)} cartas · blackjack paga 3 a 2 · el crupier se planta en 17 · doblas con 2 cartas · divides hasta 4 manos, también Ases, y en cada una puedes pedir · rendirte te devuelve la mitad</p>`;
   // controles
   if(g.phase==="play"){
@@ -1952,6 +1952,8 @@ const EMBL={
   trebol:{n:"Trébol", d:(x,s)=>suitD(x,s,"♣","#16130f","#f1ede2")},
   dado:{n:"Dado", d:(x,s)=>{ x.drawImage(die(16,[6,5,4]),-s*0.5,-s*0.5,s,s); }},
   estrella:{n:"Estrella", d:(x,s)=>{ const r=s*0.5; x.beginPath(); for(let i=0;i<10;i++){ const a=-Math.PI/2+i*Math.PI/5, q=i%2?r*0.45:r; x.lineTo(Math.cos(a)*q,Math.sin(a)*q+s*0.04); } x.closePath(); x.save(); x.translate(0.6,0.6); x.fillStyle="#b88a1c"; x.fill(); x.restore(); x.fillStyle="#ffd75e"; x.fill(); }},
+  vacio:{n:"", hide:true, d:()=>{}},
+  monto:{n:"Monto", hide:true, d:(x,s,c,ini,amt)=>{ const t=String(amt||""); const fs=s*(t.length<=2?0.62:t.length===3?0.5:0.4); x.font=`bold ${fs}px "Barlow Semi Condensed","Arial Narrow",sans-serif`; x.textAlign="center"; x.textBaseline="middle"; x.fillStyle="rgba(0,0,0,.45)"; x.fillText(t,0.6,s*0.04+0.6); x.fillStyle=c; x.fillText(t,0,s*0.04); }},
   bolsa:{n:"Bolsa $", d:(x,s)=>{ const k=s/16; x.save(); x.scale(k,k); x.translate(-8,-8); x.fillStyle="#6b4a1c"; x.beginPath(); x.ellipse(8,11,6,4.6,0,0,7); x.fill(); x.fillStyle="#a8772e"; x.beginPath(); x.ellipse(8,10.5,5.6,4.2,0,0,7); x.fill();
     x.beginPath(); x.moveTo(5.5,6.5); x.lineTo(10.5,6.5); x.lineTo(9.5,3.5); x.lineTo(6.5,3.5); x.closePath(); x.fill(); x.fillStyle="#ffd75e"; x.fillRect(5.5,6,5,1.2);
     x.font="bold 7px monospace"; x.textAlign="center"; x.textBaseline="middle"; x.fillText("$",8,11); x.restore(); }}
@@ -1969,7 +1971,7 @@ function chipCanvas(c,px){ return mk(px,px,(x,W)=>{ const r=W/2;
   x.strokeStyle="rgba(255,255,255,.28)"; x.lineWidth=Math.max(1,W*0.03); x.beginPath(); x.arc(r,r,r-1,0,7); x.stroke();
   x.strokeStyle=c.edge; x.lineWidth=Math.max(0.8,W*0.025); x.setLineDash([W*0.04,W*0.03]); x.beginPath(); x.arc(r,r,r*0.66,0,7); x.stroke(); x.setLineDash([]);
   x.fillStyle=c.mid||c.base; x.beginPath(); x.arc(r,r,r*0.58,0,7); x.fill();
-  x.save(); x.translate(r,r); (EMBL[c.em]||EMBL.inicial).d(x,W*0.62,c.emc||"#fff",c.ini||"?"); x.restore();
+  x.save(); x.translate(r,r); (EMBL[c.em]||EMBL.inicial).d(x,W*0.62,c.emc||"#fff",c.ini||"?",c.amt); x.restore();
   x.fillStyle="rgba(255,255,255,.16)"; x.beginPath(); x.ellipse(r*0.72,r*0.55,r*0.36,r*0.15,-0.45,0,7); x.fill(); }); }
 
 // ---------- fichas de cada jugador (por apodo, compartidas en la base) ----------
@@ -1979,16 +1981,24 @@ const FICHAS={}; const URLC={};
 function defCfg(name,seat){ const n=normName(name); let h=0; for(const ch of n) h=(h*31+ch.charCodeAt(0))>>>0;
   const base=seat!==undefined&&seat!==null&&!n ? DEFC[seat%DEFC.length] : DEFC[h%DEFC.length];
   return {base,edge:"#f1ede2",pat:"clasica",mid:shade(base,0.85),em:"inicial",emc:"#fff"}; }
-function cfgOf(name,seat){ const mine=normName(name)===normName(getAlias()) && myCfg(); const c=mine||FICHAS[keyOf(name)]||defCfg(name,seat);
+const okCfg=c=>c&&typeof c==="object"&&typeof c.base==="string"&&typeof c.edge==="string";
+function cfgOf(name,seat){ const mine=normName(name)===normName(getAlias()) && myCfg(); const c=[mine,FICHAS[keyOf(name)]].find(okCfg)||defCfg(name,seat);
   return Object.assign({},c,{ini:(String(name||"?").trim()[0]||"?").toUpperCase()}); }
-function chipURL(name,seat){ const c=cfgOf(name,seat); const k=JSON.stringify(c); if(!URLC[k]) URLC[k]=chipCanvas(c,40).toDataURL(); return URLC[k]; }
-function myCfg(){ try{ return JSON.parse(lsGet("mc-chip")||"null"); }catch(e){ return null; } }
+function chipURL(name,seat){ try{ const c=cfgOf(name,seat); const k=JSON.stringify(c); if(!URLC[k]) URLC[k]=chipCanvas(c,40).toDataURL(); return URLC[k]; }catch(e){ return chipCanvas(defCfg(name,seat),40).toDataURL(); } }
+(function(){ try{ const v=JSON.parse(lsGet("mc-chip")||"null"); if(v && typeof v==="object"){ lsSet("mc-ficha",JSON.stringify(v)); lsSet("mc-chip","100"); } }catch(e){} })();   // versión anterior: mismo lugar
+function betChip(v){ let base=myCfg(); if(!okCfg(base)) base=cfgOf(getAlias()||"?");
+  const c=Object.assign({},base,{em:"vacio"}); const k="bet:"+JSON.stringify(c);
+  try{ if(!URLC[k]) URLC[k]=chipCanvas(c,48).toDataURL(); }catch(e){ URLC[k]=chipCanvas(defCfg(getAlias()),48).toDataURL(); }
+  const mid=(base.mid||base.base||"#000").replace("#",""), n=parseInt(mid.length===6?mid:"000000",16), lum=((n>>16)*299+((n>>8)&255)*587+(n&255)*114)/1000;
+  return {url:URLC[k], ink: lum>150?"#16130f":"#ffffff", label: v>=1000?(v/1000)+"K":String(v)}; }
+function betChipURL(v){ return betChip(v).url; }
+function myCfg(){ try{ const v=JSON.parse(lsGet("mc-ficha")||"null"); return v&&typeof v==="object"&&v.base?v:null; }catch(e){ return null; } }
 function syncChip(){ const c=myCfg(), a=getAlias(); if(!c||!a||!ST.db) return; ST.db.doc("fichas/"+keyOf(a)).set({name:a,cfg:JSON.stringify(c),at:Date.now()}).catch(()=>{}); }
 function repaintAll(){ try{ renderBoard2(); }catch(e){} try{ if(ST.mesas) renderLobbyList(); }catch(e){} try{ if(ST.T && !$$("mesa").hidden) render(); }catch(e){} try{ renderMe(); }catch(e){} }
 let fichasOn=false;
 function watchFichas(){ if(fichasOn||!ST.db) return; fichasOn=true;
   try{ ST.db.collection("fichas").onSnapshot(qs=>{ let ch=false; qs.docs.forEach(d=>{ const v=d.data()||{}; let c=null; try{ c=JSON.parse(v.cfg); }catch(e){} if(c && JSON.stringify(FICHAS[d.id])!==JSON.stringify(c)){ FICHAS[d.id]=c; ch=true; } });
-      const mine=FICHAS[keyOf(getAlias())]; if(mine && !myCfg()){ lsSet("mc-chip",JSON.stringify(mine)); ch=true; }   // tu ficha guardada desde otro cel
+      const mine=FICHAS[keyOf(getAlias())]; if(mine && !myCfg()){ lsSet("mc-ficha",JSON.stringify(mine)); ch=true; }   // tu ficha guardada desde otro cel
       if(ch) repaintAll(); }, ()=>{}); }catch(e){}
 }
 const waitDb=setInterval(()=>{ if(ST.db){ clearInterval(waitDb); watchFichas(); syncChip(); } },600);
@@ -2017,7 +2027,7 @@ function buildSheet(){
   $$("chipBase").innerHTML=BASES.map(c=>`<button data-c="${c}" style="background:${c}" aria-label="color"></button>`).join("");
   $$("chipEdge").innerHTML=EDGES.map(c=>`<button data-c="${c}" style="background:${c}" aria-label="color del borde"></button>`).join("");
   $$("chipPats").innerHTML=Object.entries(PATS).map(([k,n])=>`<button data-pat="${k}"><span></span>${n}</button>`).join("");
-  $$("chipEms").innerHTML=Object.entries(EMBL).map(([k,v])=>`<button data-em="${k}"><span></span><small>${v.n}</small></button>`).join("");
+  $$("chipEms").innerHTML=Object.entries(EMBL).filter(([k,v])=>!v.hide).map(([k,v])=>`<button data-em="${k}"><span></span><small>${v.n}</small></button>`).join("");
   $$("chipEms").querySelectorAll("[data-em]").forEach(b=>{ const c=mk(22,22,x=>{ x.translate(11,11); EMBL[b.dataset.em].d(x,20,"#d4b25c",(getAlias()||"F")[0].toUpperCase()); }); c.className="pix"; c.style.width=c.style.height="36px"; b.querySelector("span").appendChild(c); });
   $$("chipSheet").addEventListener("click",e=>{ const t=e.target.closest("button"); if(!t) return;
     if(t.dataset.pre!==undefined) EDIT=Object.assign({},PRESETS[+t.dataset.pre][1]);
@@ -2027,7 +2037,7 @@ function buildSheet(){
     else if(t.dataset.em){ EDIT.em=t.dataset.em; if(EDIT.em==="inicial") EDIT.emc=["#f1ede2","#ffd75e"].includes(EDIT.base)?"#16130f":"#fff"; }
     else return;
     paintSheet(); });
-  $$("chipSave").onclick=()=>{ lsSet("mc-chip",JSON.stringify(EDIT)); syncChip(); closeSheets(); repaintAll(); toast("Ficha guardada: así te ven en todas las mesas"); };
+  $$("chipSave").onclick=()=>{ lsSet("mc-ficha",JSON.stringify(EDIT)); syncChip(); closeSheets(); repaintAll(); toast("Ficha guardada: así te ven en todas las mesas"); };
 }
 function openSheet(id){ $$(id).hidden=false; document.body.classList.add("l2lock"); }
 function closeSheets(){ ["chipSheet","setSheet"].forEach(id=>$$(id).hidden=true); document.body.classList.remove("l2lock"); }
@@ -2124,5 +2134,5 @@ bgSize(); addEventListener("resize",bgSize); requestAnimationFrame(loop);
 buildReels(); paintIcons($$("l2games")); renderMe();
 // avisos: resumen corto junto a "Mesas abiertas"
 setInterval(()=>{ const m=$$("pushMini"); if(!m) return; const on=localStorage.getItem("mc-push")==="on"; m.textContent=on?"🔔 avisos activos":""; },2000);
-window.L2={chipURL,syncChip,paintIcons,repaintAll};
+window.L2={chipURL,betChip,betChipURL,syncChip,paintIcons,repaintAll};
 })();
