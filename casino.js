@@ -641,6 +641,7 @@ async function initCaps(){
     : "En esta vista no hay mesas compartidas: puedes jugar solo, pero la mesa no se guarda al cerrar.";
   $("create").textContent = ST.canMulti ? "Confirmar mesa" : "Jugar solo";
   if(ST.readOnly) $("capNote").textContent = READONLY_TXT;
+  if(window.OFFLINE) $("capNote").textContent = "Modo offline: tus mesas se guardan solo en este cel. Para jugar con tus amigos, vuelve a online.";
   loadBoard();
   setTimeout(()=>{ if(typeof solCardInfo==="function") solCardInfo(); },0);
   if(ST.db) watchLobby(); else $("mlist").html='<div class="empty">Las mesas compartidas no están disponibles en esta vista.</div>';
@@ -1134,7 +1135,7 @@ function ding(kind){
 function renderConn(){
   const el=$("conn"); if(!el) return;
   const live=ST.rm&&ST.conn;
-  el.html= `<i class="dot${live?" on":""}"></i>${!ST.canMulti?"Solo":live?"En vivo":ST.rm?"Reconectando…":"Sin tiempo real"}`;
+  el.html= window.OFFLINE ? `<i class="dot"></i>Offline` : `<i class="dot${live?" on":""}"></i>${!ST.canMulti?"Solo":live?"En vivo":ST.rm?"Reconectando…":"Sin tiempo real"}`;
 }
 function isTurn(T,id){ const g=T.g; return (T.game==="bj"&&g.phase==="play"&&g.turn&&g.turn.id===id) || (T.game==="pk"&&g.toAct===id); }
 function renderSeats(){
@@ -2030,7 +2031,7 @@ $$("gearBtn").onclick=()=>openSheet("setSheet");
 
 // ---------- Mesa Nueva: rodillos ----------
 const NAMES=["La Racha","Dealer HDP","All-in o nada","Noche de Suerte","El Bluff","Doble o Nada","Mesa Dorada","As de Oro","Todo al Rojo","Flor Imperial","La Ficha Loca","Casa Llena"];
-const REELS=[{k:"juego",t:"JUEGO",items:[["bac","Baccarat"],["rul","Ruleta"],["bj","Blackjack"],["pk","Póker"]]},
+const REELS=[{k:"juego",t:"JUEGO",items:[["bac","Baccarat"],["rul","Ruleta"],["bj","Blackjack"],["pk","Póker"]].filter(x=>!(window.OFFLINE&&x[0]==="pk"))},
   {k:"fichas",t:"FICHAS",items:[["5000","5K"],["10000","10K"],["50000","50K"],["100000","100K"]]},
   {k:"nombre",t:"NOMBRE",items:NAMES.map(n=>[n])}];
 const CHC={"5000":"#c8352b","10000":"#2a64c9","50000":"#2f9a62","100000":"#16130f"};
@@ -2118,4 +2119,21 @@ buildReels(); paintIcons($$("l2games")); renderMe();
 // avisos: resumen corto junto a "Mesas abiertas"
 setInterval(()=>{ const m=$$("pushMini"); if(!m) return; const on=localStorage.getItem("mc-push")==="on"; m.textContent=on?"🔔 avisos activos":""; },2000);
 window.L2={chipURL,betChip,betChipURL,syncChip,paintIcons,repaintAll};
+})();
+
+// ================= Modo offline (botón de hasta abajo) =================
+(function(){
+  const off=!!window.OFFLINE, $o=id=>document.getElementById(id);
+  const set=v=>{ try{ localStorage.setItem("mc-offline", v?"1":"0"); }catch(e){} location.reload(); };
+  if(off){
+    document.body.classList.add("offline");
+    const bar=$o("offBar"); if(bar) bar.hidden=false;
+    if(window.OFFLINE_AUTO){ $o("offBarT").innerHTML="📴 Sin internet<small>Estás en modo offline: juegas contra la casa</small>"; $o("offBack").textContent="Reintentar"; }
+    $o("offBtn").textContent="🌐 Volver a online"; $o("offNote").textContent="El póker y las mesas con amigos necesitan internet.";
+    const h=document.querySelector("#mlist")&&document.querySelector("#mlist").parentNode.querySelector("h2"); if(h) h.textContent="Tus mesas offline";
+    if(UI.createGame==="pk") UI.createGame="bac";
+  }
+  if($o("offBtn")) $o("offBtn").addEventListener("click",()=>{
+    set(!off); });
+  if($o("offBack")) $o("offBack").addEventListener("click",()=>set(false));
 })();

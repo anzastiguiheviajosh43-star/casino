@@ -1,10 +1,12 @@
-const CACHE="mesa4-2.1.1";
+const CACHE="mesa4-2.2.0";
 const FILES=["./", "index.html", "casino.js", "adapter.js", "config.js", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png", "firebase-app-compat.js", "firebase-auth-compat.js", "firebase-firestore-compat.js", "push.js", "r-jaja.png", "r-ctm.png", "r-faah.png", "r-dealer.png", "r-ride.png", "fondo.jpg", "emblemas.png"];
 self.addEventListener("install",e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())); });
-self.addEventListener("activate",e=>{ e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE).map(x=>caches.delete(x)))).then(()=>self.clients.claim())); });
+self.addEventListener("activate",e=>{ e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE&&!/-fonts$/.test(x)).map(x=>caches.delete(x)))).then(()=>self.clients.claim())); });
 self.addEventListener("fetch",e=>{
   const u=new URL(e.request.url);
-  if(e.request.method!=="GET" || u.origin!==location.origin) return;            // Firebase y fuentes van directo a internet
+  if(e.request.method==="GET" && /fonts\.(googleapis|gstatic)\.com$/.test(u.hostname)){   // letras: se guardan para el modo offline
+    e.respondWith(caches.open(CACHE+"-fonts").then(c=>c.match(e.request).then(hit=>hit||fetch(e.request).then(r=>{ c.put(e.request,r.clone()); return r; })))); return; }
+  if(e.request.method!=="GET" || u.origin!==location.origin) return;            // Firebase va directo a internet
   e.respondWith(fetch(e.request,{cache:"no-cache"}).then(r=>{ const copy=r.clone(); caches.open(CACHE).then(c=>c.put(e.request,copy)); return r; })
     .catch(()=>caches.match(e.request,{ignoreSearch:true}).then(r=>r||caches.match("index.html"))));
 });

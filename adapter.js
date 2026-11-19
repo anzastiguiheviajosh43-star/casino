@@ -1,7 +1,54 @@
 // ================= Puente Firebase para la versión app =================
 // El casino usa window.claude.use("db" | "room" | "user"). Aquí se arma lo mismo con
 // Firebase: Firestore para las mesas y la presencia, y login anónimo para identificar cada cel.
+// ================= Modo offline =================
+// Si el modo offline está prendido (o el cel no tiene internet), el casino usa una "base de datos"
+// guardada solo en este cel: mismas funciones que Firebase, pero sin internet y sin otros jugadores.
 (function(){
+  let pick=false; try{ pick=localStorage.getItem("mc-offline")==="1"; }catch(e){}
+  const noNet = navigator.onLine===false;
+  window.OFFLINE = pick || noNet; window.OFFLINE_AUTO = !pick && noNet;
+  if(!window.OFFLINE) return;
+  const P="off:", L=[];
+  const rd=p=>{ try{ const v=localStorage.getItem(P+p); return v?JSON.parse(v):undefined; }catch(e){ return undefined; } };
+  const wr=(p,d)=>{ try{ if(d===undefined) localStorage.removeItem(P+p); else localStorage.setItem(P+p,JSON.stringify(d)); }catch(e){} setTimeout(()=>L.slice().forEach(f=>f(p)),0); };
+  const clone=d=>d===undefined?undefined:JSON.parse(JSON.stringify(d));
+  const snap=(p,d)=>({id:p.split("/").pop(), exists:d!==undefined, metadata:{}, data:()=>clone(d)});
+  const listen=f=>{ L.push(f); return ()=>{ const i=L.indexOf(f); if(i>=0) L.splice(i,1); }; };
+  function docRef(path){ return {
+    id:path.split("/").pop(), path,
+    get: async()=>snap(path,rd(path)),
+    set: async d=>{ wr(path,clone(d)); return {path}; },
+    update: async d=>{ wr(path,Object.assign(rd(path)||{},clone(d))); return {path}; },
+    delete: async()=>{ wr(path,undefined); },
+    onSnapshot:(cb)=>{ setTimeout(()=>cb(snap(path,rd(path))),0); return listen(p=>{ if(p===path) cb(snap(path,rd(path))); }); },
+    txn: async fn=>{ const T=rd(path); if(T===undefined) return {ok:false,T:null}; const ok=!!fn(T); if(ok) wr(path,clone(T)); return {ok,T}; },
+    collection:p=>collRef(path+"/"+p) }; }
+  function collRef(path,o){ o=o||{where:[],order:null,limit:null}; const n=path.split("/").length;
+    const run=()=>{ let docs=[];
+      for(let i=0;i<localStorage.length;i++){ const k=localStorage.key(i); if(!k||k.indexOf(P+path+"/")!==0) continue; const p=k.slice(P.length); if(p.split("/").length!==n+1) continue; docs.push(snap(p,rd(p))); }
+      docs=docs.filter(d=>{ const v=d.data()||{}; return o.where.every(([f,op,val])=> op==="=="||op==="eq" ? v[f]===val : op==="!="||op==="ne" ? v[f]!==val : true); });
+      if(o.order) docs.sort((a,b)=>{ const x=(a.data()||{})[o.order[0]]||0, y=(b.data()||{})[o.order[0]]||0; return o.order[1]==="desc"?(y>x?1:y<x?-1:0):(x>y?1:x<y?-1:0); });
+      if(o.limit) docs=docs.slice(0,o.limit);
+      return {docs,size:docs.length,empty:!docs.length,docChanges:()=>docs.map(d=>({type:"modified",doc:d}))}; };
+    const next=x=>collRef(path,Object.assign({},o,x));
+    return { path, doc:id=>docRef(path+"/"+id),
+      where:(f,op,v)=>next({where:o.where.concat([[f,op,v]])}), orderBy:(f,d)=>next({order:[f,d||"asc"]}), limit:k=>next({limit:k}),
+      get: async()=>run(),
+      onSnapshot:(cb)=>{ setTimeout(()=>cb(run()),0); return listen(p=>{ if(p.indexOf(path+"/")===0 && p.split("/").length===n+1) cb(run()); }); } }; }
+  const db={ doc:docRef, collection:p=>collRef(p) };
+  const room={ join: async()=>{ let pres={}, hs=[];
+    const list=()=>({peers:[{by:"offline", peer:"yo", presence:pres, updatedAt:Date.now(), isMe:true, sameTab:true}]});
+    return { emit:async()=>{}, on:()=>()=>{}, peers:()=>[],
+      presence: async x=>{ pres=Object.assign({},pres,x||{}); hs.forEach(h=>h(list())); },
+      onPeers:h=>{ hs.push(h); h(list()); return ()=>{ hs=hs.filter(x=>x!==h); }; },
+      connected:()=>true, onConnection:h=>{ h(true); return ()=>{}; }, leave:async()=>{ hs=[]; } }; } };
+  const user={ me:async()=>({id:"offline",name:""}), id:async()=>"offline", can:async()=>true, isOwner:()=>false, canEdit:()=>true };
+  window.claude={ use: async n=>({db, room, user})[n]||null };
+})();
+
+(function(){
+  if(window.OFFLINE) return;
   const cfg = window.FIREBASE_CONFIG;
   if(!cfg || !cfg.apiKey || /PEGA/.test(cfg.apiKey) || !window.firebase){ console.warn("Sin configuración de Firebase: modo un jugador"); return; }
   firebase.initializeApp(cfg);
