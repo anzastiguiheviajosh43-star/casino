@@ -1710,7 +1710,8 @@ async function solLoad(){
   let d=null;
   try{ d=JSON.parse(lsGet("mc-sol:"+solKey())||"null"); }catch(e){}
   const ref=solRef();
-  if(ref){ try{ const s=await ref.get(); if(s.exists){ const r=clone(s.data()); if(!d || (r.at||0)>=(d.at||0)) d=r; } }catch(e){} }
+  // con internet lento la nube puede tardar mucho: si no contesta en 2.5 s, se usa lo guardado en el cel
+  if(ref){ try{ const s=await Promise.race([ref.get(), new Promise((_,no)=>setTimeout(()=>no(new Error("lento")),2500))]); if(s && s.exists){ const r=clone(s.data()); if(!d || (r.at||0)>=(d.at||0)) d=r; } }catch(e){} }
   if(d && d.p) SOLP=Object.assign({level:1,wins:0,best:{}},d.p);
   SOL = d && d.g && !d.g.won ? d.g : null;
 }
@@ -1862,11 +1863,16 @@ function solRender(){
 function solTick(){ if(!SOL||$("sol").hidden) return; $("solStat").textContent=`${SOL.moves} jugadas · ${mmss(SOL.won?SOL.tUsed:now()-SOL.t0)}`; }
 async function solOpen(){
   if(!getAlias()){ toast("Primero cambia tu apodo: así se guarda tu nivel"); $("alias").focus(); window.scrollTo(0,0); return; }
-  $("solOpen").disabled=true; await solLoad(); $("solOpen").disabled=false;
-  if(!SOL || SOL.won) solDeal();
+  if(solOpen.busy) return; solOpen.busy=true;
+  try{ await solLoad(); }catch(e){}
+  solOpen.busy=false;
+  const okGame=g=>g && Array.isArray(g.tab) && g.tab.length===7 && Array.isArray(g.found) && g.found.length===4 && Array.isArray(g.stock) && Array.isArray(g.waste);
+  if(!SOLP || typeof SOLP.level!=="number") SOLP={level:1,wins:0,best:{}};
+  if(!okGame(SOL) || SOL.won) solDeal();
   SOL.t0=now()-(SOL.tUsed||0);
   solUndo=[]; $("lobby").hidden=true; $("sol").hidden=false; window.scrollTo(0,0);
-  solRender(); clearInterval(solTimer); solTimer=setInterval(solTick,1000);
+  try{ solRender(); }catch(e){ console.error(e); solDeal(); SOL.t0=now(); solRender(); }   // partida guardada dañada: se reparte otra
+  clearInterval(solTimer); solTimer=setInterval(solTick,1000);
 }
 function solClose(){ if(SOL && !SOL.won) SOL.tUsed=now()-SOL.t0; solSave(true); clearInterval(solTimer); $("sol").hidden=true; $("lobby").hidden=false; solCardInfo(); window.scrollTo(0,document.body.scrollHeight); }
 async function solCardInfo(){ try{ await solLoad(); const c=solCfg(SOLP.level); $("solCardInfo").textContent=`Nivel ${SOLP.level} · ${c.name}${SOLP.wins?` · ${SOLP.wins} ganada${SOLP.wins>1?"s":""}`:""}${SOL&&!SOL.won?" · tienes una partida a medias":""}`; }catch(e){} }
