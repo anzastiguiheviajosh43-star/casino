@@ -852,7 +852,8 @@ function ensureSeat(alias){
 // Si dos cels entran con el mismo apodo, el que llegó después se queda mirando
 function checkDup(){
   if(!ST.T||!ST.acct||UI.dup) return;
-  const older=()=>ST.peers.find(p=>!p.sameTab && p.presence && !p.presence.away && p.presence.uid===ST.uid && (p.presence.since||0)<UI.since);
+  // solo cuenta si es OTRO cel (no una pestaña vieja de este mismo) y sigue latiendo (no es un fantasma de cuando se cerró la app)
+  const older=()=>ST.peers.find(p=>!p.sameTab && !p.isMe && p.presence && !p.presence.away && p.presence.uid===ST.uid && (p.presence.since||0)<UI.since && now()-(p.presence.hb||p.updatedAt||0)<30000);
   if(!older()){ clearTimeout(checkDup.t); checkDup.t=null; return; }
   if(checkDup.t) return;
   checkDup.t=setTimeout(()=>{ checkDup.t=null;
@@ -1167,7 +1168,7 @@ function renderSeats(){
 function renderWho(){
   const box=$("whoBox"), T=ST.T;
   if(ST.readOnly && ST.canMulti){ box.hidden=false; box.html=`<div><b>Estás mirando.</b> ${READONLY_TXT}</div>`; return; }
-  if(UI.dup){ box.hidden=false; box.html=`<div><b>Ya hay alguien jugando como ${esc(UI.dup)} en otro cel.</b> Para jugar desde este, regresa al lobby, escribe otro apodo (por ejemplo tu nombre) y vuelve a entrar.</div><div class="row"><button class="btn sm go" data-who="lobby">Cambiar mi apodo</button></div>`; return; }
+  if(UI.dup){ box.hidden=false; box.html=`<div><b>Ya hay alguien jugando como ${esc(UI.dup)} en otro cel.</b> Si eres tú y ese otro cel ya no lo usas, juega aquí. Si es otra persona, cambia tu apodo.</div><div class="row"><button class="btn sm go" data-who="takeback">Soy yo · jugar aquí</button><button class="btn sm" data-who="lobby">Cambiar mi apodo</button></div>`; return; }
   // Mesa llena: si hay bots, se puede tomar su lugar
   if(!me() && seatsUsed(T)>=MAXP){
     const bots=seated(T).filter(id=>T.players[id].bot);
@@ -1200,6 +1201,13 @@ function takeBot(id){ const alias=getAlias(); mesaDo(T=>claimBot(T,id,ST.uid,ali
 function claimSeat(id){
   if(String(id).startsWith("bot:")){ takeBot(id.slice(4)); return; }
   if(id==="lobby"){ closeMesa(); $("alias").focus(); $("alias").select(); }
+  if(id==="takeback" && ST.T){   // "Soy yo": recupera tu lugar en este cel; si el otro cel sigue abierto, ahora él se queda mirando
+    const nm=normName(UI.dup||getAlias()), T=ST.T;
+    const seat=Object.keys(T.players).find(k=>!T.players[k].bot && normName(T.players[k].name)===nm);
+    UI.dup=null; UI.since=1; clearTimeout(checkDup.t); checkDup.t=null;
+    if(seat) adopt(seat); else if(ST.rm) ST.rm.presence({uid:ST.uid,since:1}).catch(()=>{});
+    render(); toast("Listo, juegas desde este cel");
+  }
 }
 function renderLog(){
   const L=(ST.T.log||[]).slice(-6).reverse();
