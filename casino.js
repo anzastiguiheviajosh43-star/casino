@@ -2357,6 +2357,22 @@ window.L2={chipURL,betChip,betChipURL,syncChip,paintIcons,repaintAll};
       if(ne[0]>cur[0] && ne[0]>be[0] && (ne[0]>=2 || (ne[0]===1 && ne[1]>=Math.max(...board.map(RV))))) outs.push(c); }
     return outs;
   }
+  // % de ligar con N outs: del flop al river (2 cartas) y del turn al river (1 carta)
+  const pFlop=o=>1-((47-o)*(46-o))/(47*46), pTurn=o=>o/46;
+  const DRAWS=[["Proyecto de color + escalera abierta",15,"4 del mismo palo y 4 seguidas"],["Color + escalera de hueco",12,"4 del mismo palo y te falta una de en medio"],["Proyecto de color",9,"tienes 4 del mismo palo"],["Escalera abierta",8,"4 seguidas, sirve por arriba o por abajo (ej. 9-8-7-6)"],["Dos cartas altas → par",6,"tus 2 cartas son más altas que la mesa"],["Par → doble par o tercia",5,"tienes un par y buscas mejorarlo"],["Escalera de hueco",4,"te falta una de en medio (ej. 9-8-_-6-5)"],["Pareja en mano → tercia",2,"tienes pareja y buscas la tercera"]];
+  let OUTSOPEN=false;
+  function outsPanel(hole,bd){
+    const outs=outsOf(hole,bd), live=outs&&outs.length;
+    const pc=x=>Math.round(x*100)+"%";
+    let h=`<details class="escouts" ${OUTSOPEN?"open":""}><summary>🎯 Outs para ganar</summary>`;
+    if(bd.length===0) h+=`<p class="note">Antes del flop todavía no hay outs: se cuentan cuando ya hay cartas en la mesa.</p>`;
+    else if(bd.length===5) h+=`<p class="note">En el river ya no quedan cartas por salir: lo que tienes es lo que hay.</p>`;
+    else if(live) h+=`<div class="esccoach"><b>Tus outs ahora: ${outs.length}</b> → ${pc(bd.length===3?pFlop(outs.length):pTurn(outs.length))} de ligar ${bd.length===3?"en turn o river":"en el river"}<div class="escoutc">${outs.map(c=>`<span class="${c[1]==="H"||c[1]==="D"?"r":""}">${cTxt(c)}</span>`).join("")}</div></div>`;
+    else h+=`<p class="note">Ahorita ninguna carta te sube de jugada. Si tu mano ya es buena, no necesitas outs; si es mala, piensa en retirarte.</p>`;
+    h+=`<table class="escbt"><tr><th>Proyecto</th><th>Outs</th><th>Flop→River</th><th>Turn→River</th></tr>${DRAWS.map(([n,o,d])=>`<tr><td>${n}<br><small class="mut">${d}</small></td><td><b>${o}</b></td><td>${pc(pFlop(o))}</td><td>${pc(pTurn(o))}</td></tr>`).join("")}</table>
+      <p class="note"><b>Regla rápida:</b> en el flop, outs × 4; en el turn, outs × 2. <b>Ojo:</b> no cuentes una carta que también le ayude al rival (por ejemplo, la que pone 4 del mismo palo en la mesa).</p></details>`;
+    return h;
+  }
   function preTip(h){
     const a=RV(h[0]), b=RV(h[1]), hi=Math.max(a,b), lo=Math.min(a,b), suited=h[0][1]===h[1][1], pair=a===b, gap=hi-lo;
     if(pair&&hi>=10) return ["Premium","Pareja alta: de las mejores manos. Sube."];
@@ -2432,6 +2448,7 @@ window.L2={chipURL,betChip,betChipURL,syncChip,paintIcons,repaintAll};
           : r==="win"?`<b class="good">¡Ganaste el bote de ${PG.pot}!</b> ${PG.meName}.`:r==="lose"?`<b class="bad">Perdiste.</b> ${PG.bestOpp.n} tenía ${handName(PG.bestOpp.ev)}.`:"<b>Empate</b>: se reparte el bote."}
           <br><span class="mut">Lo que cuenta es decidir bien, no ganar cada mano: pagar cuando las cuentas dan, retirarte cuando no.</span></div><button class="btn go" data-esc="pgnew">Otra mano</button>`;
       }
+      h+=outsPanel(PG.hole,bd);
       h+=`<p class="note">Los porcentajes salen de simular cientos de manos al azar con las cartas que ves. Los bots aquí siempre pagan hasta el final.</p>`;
     } else if(s==="quien"){
       if(!PQ) pqNew();
@@ -2562,6 +2579,7 @@ window.L2={chipURL,betChip,betChipURL,syncChip,paintIcons,repaintAll};
   function escOpen(){ $e("lobby").hidden=true; $e("esc").hidden=false; window.scrollTo(0,0); escRender(); }
   function escClose(){ $e("esc").hidden=true; $e("lobby").hidden=false; const b=$e("escBtn"); if(b) b.scrollIntoView({block:"center"}); }
   window.ESC={open:escOpen, close:escClose, bjBest, equity};
+  document.addEventListener("toggle",e=>{ if(e.target && e.target.classList && e.target.classList.contains("escouts")) OUTSOPEN=e.target.open; },true);
   document.addEventListener("click",e=>{
     const t=e.target.closest("button,summary"); if(!t) return;
     if(t.id==="escBtn"){ escOpen(); return; }
