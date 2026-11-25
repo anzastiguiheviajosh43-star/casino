@@ -334,6 +334,40 @@ body.offline [data-g="pk"],body.offline [data-pick="pk"],body.offline #boardBox,
 .l2offbar{display:flex;align-items:center;justify-content:space-between;gap:10px;padding:10px 14px;border-radius:14px;background:linear-gradient(90deg,#3a1f6e,#1a1428);border:1px solid #b48cff;color:#f3eaff;font:600 .95rem var(--ui,inherit)}
 .l2offbar small{display:block;font-weight:500;opacity:.8;font-size:.8rem}
 #offBtn{width:100%}
+#escBtn{width:100%}
+.esc{display:flex;flex-direction:column;gap:12px;padding-bottom:40px}
+.esc .tabs button{border:0;background:none;color:var(--muted);font:600 .92rem var(--ui);padding:9px 2px;border-radius:10px;cursor:pointer}
+.esc .tabs button.on{background:var(--brass);color:#1c1608}
+.escbody{display:flex;flex-direction:column;gap:10px}
+.escsub{display:flex}.escsub button{flex:1;border:0;background:none;color:var(--muted);font:600 .85rem var(--ui);padding:7px 4px;border-radius:8px;cursor:pointer}
+.escsub button.on{background:var(--felt-line);color:var(--ink)}
+.escstat{display:flex;justify-content:space-between;gap:8px;font-size:.85rem;color:var(--muted)}.escstat b{color:var(--ink)}
+.escfelt{min-height:0;gap:6px}
+.esclbl{font:600 .82rem var(--ui);color:var(--muted);letter-spacing:.03em}.esclbl.cur{color:var(--brass)}.esclbl.jug{color:#8fb4ff}.esclbl.ban{color:#ff9d93}
+.escfelt .cards{display:flex;gap:6px;flex-wrap:wrap;min-height:70px}
+.escfelt .slot{width:48px;height:70px;border-radius:7px;border:1px dashed var(--felt-line)}
+.card.eschl{box-shadow:0 0 0 2px var(--brass),0 0 10px rgba(212,178,92,.5)}
+.esccoach{border:1px solid var(--felt-line);border-radius:14px;padding:11px 12px;background:rgba(0,0,0,.2);font-size:.92rem;line-height:1.45}
+.esccoach2{border-color:var(--brass);background:rgba(212,178,92,.08)}
+.esccoach .good,.escbt .good{color:var(--good)}.esccoach .bad,.escbt .bad{color:var(--bad)}.esccoach .mut{color:var(--muted);font-size:.85em}
+.escacts{display:grid;grid-template-columns:repeat(auto-fit,minmax(88px,1fr));gap:8px}.escacts.two{grid-template-columns:1fr 1fr}.escacts.three{grid-template-columns:1fr 1fr 1fr}
+.escacts .btn.right{border-color:var(--good);box-shadow:0 0 0 2px var(--good) inset;color:var(--good)}
+.escacts .btn.wrong{border-color:var(--bad);color:var(--bad)}
+.eschint{font-size:.88rem;color:var(--muted)}.eschint summary{cursor:pointer;color:var(--brass)}
+.escopps{display:flex;gap:10px;flex-wrap:wrap}.escopps>div{display:flex;flex-direction:column;gap:3px;font-size:.8rem;color:var(--muted)}.escopps .cards{min-height:0}
+.escvs{display:grid;grid-template-columns:1fr 1fr;gap:10px}.escvs .cards{min-height:0}
+.escq{font:400 1.15rem var(--display);color:var(--brass);text-align:center}
+.escbt{width:100%;border-collapse:collapse;margin:6px 0;font-size:.85rem}.escbt th,.escbt td{border-bottom:1px solid var(--felt-line);padding:5px 4px;text-align:left}.escbt th{color:var(--muted);font-weight:600}
+.escrank{display:flex;flex-direction:column;gap:6px}.escrank>div{display:grid;grid-template-columns:1fr;gap:1px;border:1px solid var(--felt-line);border-radius:10px;padding:7px 10px;background:rgba(0,0,0,.15)}
+.escrank b{color:var(--brass);font-weight:600}.escrank .mono{font:500 .95rem var(--mono)}.escrank .mono i.r{font-style:normal;color:#ff8a7e}.escrank small{color:var(--muted)}
+.esctabla{display:flex;flex-direction:column;gap:12px;overflow-x:auto}
+.esctabla table{border-collapse:separate;border-spacing:2px;font:600 .72rem var(--mono);width:100%}
+.esctabla caption{text-align:left;font:600 .85rem var(--ui);color:var(--brass);padding-bottom:3px}
+.esctabla th{color:var(--muted);font-weight:600;padding:2px;white-space:nowrap}
+.bc{display:inline-grid;place-items:center;min-width:20px;height:20px;border-radius:4px;color:#10140f;text-align:center;padding:0 2px}
+td.bc{display:table-cell}
+.bc.H{background:#e9e3cf}.bc.S{background:#e26a5c}.bc.D{background:#7fd38f}.bc.P{background:#e6c05a}.bc.R{background:#b9a0ff}
+td.bc.on{outline:3px solid #fff;outline-offset:-1px;box-shadow:0 0 10px #fff}
 .l2panel{background:rgba(6,22,17,.8);border:1px solid var(--felt-line);border-radius:18px;padding:14px;display:flex;flex-direction:column;gap:10px;backdrop-filter:blur(2px);-webkit-backdrop-filter:blur(2px)}
 .l2panel h2{margin:0;font:400 1.3rem var(--display)}
 .l2link{background:none;border:0;color:var(--brass);font:600 .88rem var(--ui);cursor:pointer;padding:4px;align-self:center}
@@ -489,6 +523,10 @@ img.l2mini{width:15px;height:15px;vertical-align:-3px;margin-right:3px;image-ren
       <p class="note" id="solCardInfo">Para jugar solo, sin apostar.</p>
     </div>
 
+    <div class="l2panel" id="escBox">
+      <button class="btn" id="escBtn">🎓 Escuela: aprende y practica</button>
+      <p class="note">Coach de blackjack, póker guiado, y reglas de baccarat y ruleta. Fichas de práctica: no toca tu saldo. Funciona sin internet.</p>
+    </div>
     <div class="l2panel" id="offBox">
       <button class="btn" id="offBtn">📴 Jugar offline</button>
       <p class="note" id="offNote">Blackjack, ruleta y baccarat contra la casa, sin internet. El póker sí necesita internet.</p>
@@ -535,6 +573,16 @@ img.l2mini{width:15px;height:15px;vertical-align:-3px;margin-right:3px;image-ren
       <button class="btn" id="solNew">Nueva partida</button>
     </div>
     <p class="note" id="solHelp">Toca una carta y se mueve sola a donde puede ir. Toca el mazo de la izquierda para robar. Cualquier carta puede ocupar una columna vacía. Ganas cuando subes las 52 cartas a las cuatro pilas de la derecha, del As al Rey.</p>
+  </section>
+
+  <section class="esc" id="esc" hidden>
+    <div class="topbar">
+      <button class="btn sm" id="escBack">← Lobby</button>
+      <div class="mname"><b>Escuela</b><span class="code">Práctica · sin apostar de verdad</span></div>
+      <span class="conn">🎓</span>
+    </div>
+    <div class="tabs" id="escTabs"><button data-etab="bj">Blackjack</button><button data-etab="pk">Póker</button><button data-etab="bac">Baccarat</button><button data-etab="rul">Ruleta</button></div>
+    <div class="escbody" id="escBody"></div>
   </section>
 
   <section class="mesa" id="mesa" hidden>

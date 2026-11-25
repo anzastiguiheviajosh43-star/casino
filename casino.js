@@ -2151,3 +2151,433 @@ window.L2={chipURL,betChip,betChipURL,syncChip,paintIcons,repaintAll};
     set(!off); });
   if($o("offBack")) $o("offBack").addEventListener("click",()=>set(false));
 })();
+
+// ================= 🎓 Escuela: práctica y enseñanza (BJ, Póker, Baccarat, Ruleta) =================
+// Todo es local: fichas de práctica, sin internet, no toca tu saldo ni el tablero.
+(function(){
+  const $e=id=>document.getElementById(id);
+  const rnd=n=>Math.floor(Math.random()*n);
+  const pickOne=a=>a[rnd(a.length)];
+  const shuffle=a=>{ for(let i=a.length-1;i>0;i--){ const j=rnd(i+1); [a[i],a[j]]=[a[j],a[i]]; } return a; };
+  const deck=n=>{ const d=[]; for(let k=0;k<(n||1);k++) for(const s of SUITS) for(const r of RANKS) d.push(r+s); return shuffle(d); };
+  const cH=(c,o)=>{ o=o||{}; if(c==="??") return `<div class="card back${o.sm?" sm":""}"></div>`; const r=c[0]==="T"?"10":c[0], s=c[1];
+    return `<div class="card${s==="H"||s==="D"?" r":""}${o.sm?" sm":""}${o.dim?" dim":""}${o.hl?" eschl":""}"><span class="rk">${r}</span><span class="st">${SUITCH[s]}</span></div>`; };
+  const cTxt=c=>(c[0]==="T"?"10":c[0])+SUITCH[c[1]];
+  // ---- progreso guardado en este cel
+  let ES={bj:{ok:0,n:0,best:0},dr:{ok:0,n:0,streak:0,best:0},pk:{ok:0,n:0},pq:{ok:0,n:0},bq:{ok:0,n:0},rq:{ok:0,n:0}};
+  try{ const s=JSON.parse(localStorage.getItem("mc-esc")||"null"); if(s) Object.keys(ES).forEach(k=>{ if(s[k]) Object.assign(ES[k],s[k]); }); }catch(e){}
+  const save=()=>{ try{ localStorage.setItem("mc-esc",JSON.stringify(ES)); }catch(e){} };
+  const pct=o=>o.n?Math.round(o.ok*100/o.n)+"%":"—";
+  const score=(k,ok)=>{ ES[k].n++; if(ok) ES[k].ok++; save(); };
+  let TAB="bj", SUB={bj:"coach",pk:"mano",bac:"leccion",rul:"leccion"};
+
+  // ================= BLACKJACK: estrategia básica =================
+  // Reglas de la casa: 6 mazos, el crupier se planta en todos los 17, se puede doblar después de dividir,
+  // dividir hasta 4 manos, rendición (solo con tus 2 primeras cartas, antes de dividir).
+  const up10=c=>bjVal(c)===11?11:bjVal(c);           // valor de la carta del crupier (A=11)
+  const UPS=[2,3,4,5,6,7,8,9,10,11];
+  const ACT={H:"Pedir",S:"Plantarse",D:"Doblar",P:"Dividir",R:"Rendirse"};
+  function bjBest(cs,up,o){
+    o=o||{}; const u=up10(up), two=cs.length===2, canD=two&&o.canD!==false, canP=two&&o.canP!==false&&bjVal(cs[0])===bjVal(cs[1]), canR=two&&o.canR!==false;
+    const {t,soft}=bjTot(cs);
+    if(canP){ const v=bjVal(cs[0]);
+      if(v===11||v===8) return {a:"P",w:v===11?"aa":"88"};
+      if(v===10) return {a:"S",w:"tt"};
+      if(v===9 && [2,3,4,5,6,8,9].includes(u)) return {a:"P",w:"99"};
+      if(v===9) return {a:"S",w:"99s"};
+      if(v===7 && u<=7) return {a:"P",w:"pp"};
+      if(v===6 && u<=6) return {a:"P",w:"pp"};
+      if(v===4 && (u===5||u===6)) return {a:"P",w:"44"};
+      if((v===2||v===3) && u<=7) return {a:"P",w:"pp"};
+    }
+    if(canR && !soft && ((t===16&&[9,10,11].includes(u)) || (t===15&&u===10))) return {a:"R",w:"sur"};
+    if(soft && t<21){
+      if(t>=19) return {a:"S",w:"s19"};
+      if(t===18){ if(u>=3&&u<=6) return {a:canD?"D":"S",w:"s18d"}; if(u<=8) return {a:"S",w:"s18s"}; return {a:"H",w:"s18h"}; }
+      const lo={17:3,16:4,15:4,14:5,13:5}[t];
+      if(u>=lo && u<=6) return {a:canD?"D":"H",w:"sd"};
+      return {a:"H",w:"sh"};
+    }
+    if(t>=17) return {a:"S",w:"h17"};
+    if(t>=13) return u<=6?{a:"S",w:"stiff"}:{a:"H",w:"stiffh"};
+    if(t===12) return (u>=4&&u<=6)?{a:"S",w:"stiff"}:{a:"H",w:"12h"};
+    if(t===11) return u<=10?{a:canD?"D":"H",w:"dbl"}:{a:"H",w:"11a"};
+    if(t===10) return u<=9?{a:canD?"D":"H",w:"dbl"}:{a:"H",w:"10h"};
+    if(t===9) return (u>=3&&u<=6)?{a:canD?"D":"H",w:"9d"}:{a:"H",w:"low"};
+    return {a:"H",w:"low"};
+  }
+  const WHY={
+    aa:"Dos Ases <b>siempre se dividen</b>: juntos valen 12 (mano mala) y separados cada uno puede llegar a 21.",
+    "88":"Dos 8 <b>siempre se dividen</b>: juntos suman 16, la peor mano del juego. Separados empiezas dos manos con 8.",
+    tt:"20 es casi ganadora: <b>nunca dividas los 10</b>. Romper un 20 para buscar dos 21 pierde dinero a la larga.",
+    "99":"Dos 9 suman 18, pero contra esa carta del crupier ganas más jugando dos manos que empiezan con 9.",
+    "99s":"Contra 7 tu 18 ya le gana a su 17 probable, y contra 10 o As dividir te deja dos manos débiles: <b>plántate</b>.",
+    pp:"Con esta pareja y el crupier débil, <b>dividir</b> te deja dos manos con buen arranque mientras él tiene muchas probabilidades de pasarse.",
+    "44":"Dos 4 = 8. Solo vale la pena dividirlos contra 5 o 6, cuando el crupier está en su peor momento.",
+    sur:"Esta mano pierde la mayoría de las veces contra esa carta. <b>Rendirte</b> te devuelve la mitad de tu apuesta: pierdes menos a la larga.",
+    s19:"Un 19 o 20 con As ya es mano fuerte: <b>plántate</b>.",
+    s18d:"18 con As contra carta baja: <b>dobla</b>. No te puedes pasar con una carta y el crupier tiene muchas probabilidades de pasarse.",
+    s18s:"18 con As contra 2, 7 u 8: <b>plántate</b>, le ganas o empatas casi siempre.",
+    s18h:"18 con As contra 9, 10 o As parece bueno, pero el crupier suele hacer 19 o 20. <b>Pide</b>: el As te protege, no te puedes pasar con una carta.",
+    sd:"Mano con As contra crupier débil (4–6): <b>dobla</b>. No te puedes pasar y él tiene muchas probabilidades de pasarse.",
+    sh:"Mano con As baja: <b>pide</b>. Con el As contando como 1 no te puedes pasar con una carta.",
+    h17:"17 o más: <b>plántate</b>. Pedir te pasa la mayoría de las veces.",
+    stiff:"El crupier muestra carta baja (2–6): tiene mucha probabilidad de pasarse. <b>Plántate</b> y deja que él arriesgue.",
+    stiffh:"El crupier muestra 7 o más: lo más probable es que llegue a 17–21. Con tu mano pierdes si te plantas, así que <b>pide</b>.",
+    "12h":"12 contra 2, 3 o 7+: <b>pide</b>. Solo un 10 te pasa y el crupier no está tan débil.",
+    dbl:"Es el mejor momento para <b>doblar</b>: muchas cartas valen 10 y el crupier no muestra su mejor carta.",
+    "11a":"11 contra As: <b>pide</b> sin doblar. El As del crupier es demasiado fuerte para meter el doble.",
+    "10h":"10 contra 10 o As: <b>pide</b>, pero no dobles; el crupier está fuerte.",
+    "9d":"9 contra 3–6: <b>dobla</b>. El crupier está débil y tienes buena probabilidad de llegar a 19.",
+    low:"Mano baja: <b>pide</b>. No te puedes pasar con una carta."
+  };
+  // --- estado del coach
+  let BJS=null, BJshoe=[];
+  const bjDraw=()=>{ if(BJshoe.length<60) BJshoe=deck(6); return BJshoe.pop(); };
+  function bjNew(){
+    const hands=[{c:[bjDraw()],bet:1}], dealer=[bjDraw()]; hands[0].c.push(bjDraw()); dealer.push(bjDraw());
+    BJS={hands,dealer,i:0,done:false,msg:"",log:[],ok:0,n:0,res:""};
+    if(bjTot(hands[0].c).t===21||(bjTot(dealer).t===21&&(up10(dealer[0])>=10))) bjFinish();
+    escRender();
+  }
+  function bjCur(){ return BJS.hands[BJS.i]; }
+  function bjOpts(h){ const two=h.c.length===2; return {canD:two&&!h.sa, canP:two&&BJS.hands.length<4&&bjVal(h.c[0])===bjVal(h.c[1]), canR:two&&BJS.hands.length===1}; }
+  function bjMove(m){
+    if(!BJS||BJS.done) return;
+    const h=bjCur(), o=bjOpts(h), best=bjBest(h.c,BJS.dealer[0],o);
+    if((m==="D"&&!o.canD)||(m==="P"&&!o.canP)||(m==="R"&&!o.canR)) return;
+    const ok=m===best.a; score("bj",ok); BJS.n++; if(ok) BJS.ok++;
+    const handTxt=h.c.map(cTxt).join(" ")+` (${bjTotTxt(h.c)}) vs ${cTxt(BJS.dealer[0])}`;
+    BJS.msg = ok ? `<b class="good">✓ Bien: ${ACT[m]}.</b> ${WHY[best.w]}` : `<b class="bad">✗ Lo correcto era ${ACT[best.a]}.</b> <span class="mut">${handTxt}</span><br>${WHY[best.w]}`;
+    switch(m){
+      case "H": h.c.push(bjDraw()); if(bjTot(h.c).t>=21) h.done=true; break;
+      case "S": h.done=true; break;
+      case "D": h.bet=2; h.c.push(bjDraw()); h.done=true; break;
+      case "R": h.sur=true; h.done=true; break;
+      case "P": { const c2=h.c.pop(); const nh={c:[c2,bjDraw()],bet:1,sa:c2[0]==="A"}; h.c.push(bjDraw()); h.sa=h.c[0][0]==="A"; BJS.hands.splice(BJS.i+1,0,nh);
+        if(h.sa){ h.done=true; nh.done=true; } break; }
+    }
+    while(BJS.i<BJS.hands.length && (BJS.hands[BJS.i].done || bjTot(BJS.hands[BJS.i].c).t>=21)){ BJS.hands[BJS.i].done=true; BJS.i++; }
+    if(BJS.i>=BJS.hands.length) bjFinish();
+    escRender();
+  }
+  function bjFinish(){
+    BJS.done=true; const d=BJS.dealer;
+    const live=BJS.hands.some(h=>!h.sur && bjTot(h.c).t<=21 && !(BJS.hands.length===1&&h.c.length===2&&bjTot(h.c).t===21));
+    if(live) while(bjTot(d).t<17) d.push(bjDraw());
+    const dt=bjTot(d).t, dbj=d.length===2&&dt===21; let net=0;
+    BJS.hands.forEach(h=>{ const t=bjTot(h.c).t, bj=BJS.hands.length===1&&h.c.length===2&&t===21; let r;
+      if(h.sur) r=-.5; else if(t>21) r=-h.bet; else if(dbj) r=bj?0:-h.bet; else if(bj) r=1.5; else if(dt>21||t>dt) r=h.bet; else if(t===dt) r=0; else r=-h.bet;
+      h.r=r; net+=r; });
+    BJS.net=net;
+    BJS.res = dbj ? "El crupier tiene blackjack." : `Crupier: ${dt>21?"se pasa con "+dt:dt}.`;
+  }
+  // --- drill: mano + carta del crupier, contestas rápido
+  let DR=null;
+  function drNew(){
+    const kind=rnd(10); let cs;
+    const D=deck(1);
+    if(kind<3){ const r=pickOne("A23456789T"); const s1=pickOne(SUITS), s2=pickOne(SUITS); cs=[r+s1, (r==="T"?pickOne(["T","J","Q","K"]):r)+s2]; }       // pareja
+    else if(kind<6){ cs=["A"+pickOne(SUITS), pickOne("23456789")+pickOne(SUITS)]; }                                                  // con As
+    else { do{ cs=[D.pop(),D.pop()]; }while(bjTot(cs).soft || bjVal(cs[0])===bjVal(cs[1]) || bjTot(cs).t<8 || bjTot(cs).t>17); } // dura
+    DR={cs, up:pickOne("23456789TJQKA")+pickOne(SUITS), ans:null};
+    escRender();
+  }
+  function drAns(m){
+    if(!DR||DR.ans) return; const best=bjBest(DR.cs,DR.up,{canD:true,canP:true,canR:true}); const ok=m===best.a;
+    DR.ans={m,best,ok}; score("dr",ok); if(ok){ ES.dr.streak++; ES.dr.best=Math.max(ES.dr.best,ES.dr.streak); } else ES.dr.streak=0; save();
+    escRender(); if(ok) setTimeout(()=>{ if(DR&&DR.ans&&TAB==="bj"&&SUB.bj==="drill") drNew(); },1100);
+  }
+  // --- tabla de estrategia
+  function bjChart(hl){
+    const cell=(a,on)=>`<td class="bc ${a}${on?" on":""}">${a}</td>`;
+    const head=`<tr><th></th>${UPS.map(u=>`<th>${u===11?"A":u}</th>`).join("")}</tr>`;
+    const row=(lab,cs,key)=>`<tr><th>${lab}</th>${UPS.map(u=>{ const up=(u===11?"A":u===10?"T":String(u))+"S"; const b=bjBest(cs,up,{canD:true,canP:true,canR:true}).a; return cell(b, hl&&hl.key===key&&hl.u===u); }).join("")}</tr>`;
+    const hard=[[17,"17+",["TS","7S"]],[16,"16",["TS","6S"]],[15,"15",["TS","5S"]],[14,"14",["TS","4S"]],[13,"13",["TS","3S"]],[12,"12",["TS","2S"]],[11,"11",["6S","5S"]],[10,"10",["6S","4S"]],[9,"9",["5S","4S"]],[8,"8 o menos",["5S","3S"]]];
+    const soft=[[20,"A,9",["AS","9S"]],[19,"A,8",["AS","8S"]],[18,"A,7",["AS","7S"]],[17,"A,6",["AS","6S"]],[16,"A,5",["AS","5S"]],[15,"A,4",["AS","4S"]],[14,"A,3",["AS","3S"]],[13,"A,2",["AS","2S"]]];
+    const pairs=[["A","A,A"],["T","10,10"],["9","9,9"],["8","8,8"],["7","7,7"],["6","6,6"],["5","5,5"],["4","4,4"],["3","3,3"],["2","2,2"]];
+    return `<div class="esctabla"><table><caption>Manos duras</caption>${head}${hard.map(([k,l,cs])=>row(l,cs,"h"+k)).join("")}</table>
+      <table><caption>Manos con As (suaves)</caption>${head}${soft.map(([k,l,cs])=>row(l,cs,"s"+k)).join("")}</table>
+      <table><caption>Parejas</caption>${head}${pairs.map(([r,l])=>row(l,[r+"S",r+"H"],"p"+r)).join("")}</table></div>
+      <p class="note"><span class="bc H">H</span> Pedir · <span class="bc S">S</span> Plantarse · <span class="bc D">D</span> Doblar (si no se puede, pide; con A,7 plántate) · <span class="bc P">P</span> Dividir · <span class="bc R">R</span> Rendirse (si no se puede, pide)</p>`;
+  }
+  const hlKey=(cs,up)=>{ const t=bjTot(cs); const u=up10(up); if(cs.length===2&&bjVal(cs[0])===bjVal(cs[1])) return {key:"p"+(cs[0][0]==="A"?"A":bjVal(cs[0])===10?"T":cs[0][0]),u};
+    if(t.soft&&t.t<21&&cs.length===2) return {key:"s"+t.t,u}; return {key:"h"+(t.t>=17?17:t.t<=8?8:t.t),u}; };
+
+  function renderBjTab(){
+    const s=SUB.bj;
+    let h=`<div class="seg escsub">${[["coach","Coach"],["drill","Drill rápido"],["tabla","Tabla"]].map(([k,t])=>`<button data-esub="${k}" class="${s===k?"on":""}">${t}</button>`).join("")}</div>`;
+    if(s==="coach"){
+      if(!BJS) bjNew();
+      const st=ES.bj;
+      h+=`<div class="escstat"><span>Aciertos: <b>${pct(st)}</b> <small>(${st.ok}/${st.n})</small></span><span>Esta mano: ${BJS.ok}/${BJS.n}</span></div>`;
+      h+=`<div class="felt escfelt"><div class="esclbl">Crupier ${BJS.done?`· ${bjTotTxt(BJS.dealer)}`:""}</div><div class="cards">${BJS.dealer.map((c,i)=>cH(!BJS.done&&i===1?"??":c)).join("")}</div>`;
+      BJS.hands.forEach((hd,i)=>{ const cur=!BJS.done&&i===BJS.i; const res=BJS.done&&hd.r!==undefined?(hd.r>0?`<b class="good">gana ${hd.r===1.5?"(blackjack 3:2)":hd.bet===2?"doble":""}</b>`:hd.r<0?`<b class="bad">${hd.sur?"te rendiste (−½)":"pierde"}${hd.bet===2?" doble":""}</b>`:"<b>empate</b>"):"";
+        h+=`<div class="esclbl${cur?" cur":""}">${BJS.hands.length>1?"Mano "+(i+1):"Tú"} · ${bjTotTxt(hd.c)} ${res}</div><div class="cards">${hd.c.map(c=>cH(c)).join("")}</div>`; });
+      h+=`</div>`;
+      if(BJS.msg) h+=`<div class="esccoach">${BJS.msg}</div>`;
+      if(BJS.done){ h+=`<div class="esccoach">${BJS.res} ${BJS.net>0?`<b class="good">Ganaste esta ronda.</b>`:BJS.net<0?`<b class="bad">Perdiste esta ronda.</b>`:"<b>Empate.</b>"}<br><span class="mut">Ojo: jugar perfecto no gana cada mano; baja la ventaja de la casa a ~0.5%.</span></div><button class="btn go" data-esc="bjnew">Otra mano</button>`; }
+      else { const o=bjOpts(bjCur());
+        h+=`<div class="escacts"><button class="btn" data-bj="H">Pedir</button><button class="btn" data-bj="S">Plantarse</button><button class="btn" data-bj="D" ${o.canD?"":"disabled"}>Doblar</button><button class="btn" data-bj="P" ${o.canP?"":"disabled"}>Dividir</button><button class="btn" data-bj="R" ${o.canR?"":"disabled"}>Rendirse</button></div>
+          <details class="eschint"><summary>💡 Ver pista</summary>${(()=>{ const b=bjBest(bjCur().c,BJS.dealer[0],o); return `<b>${ACT[b.a]}</b>: ${WHY[b.w]}`; })()}</details>`; }
+      h+=`<p class="note">Reglas como en la mesa: 6 mazos, el crupier se planta en 17, puedes doblar después de dividir y rendirte con tus 2 primeras cartas.</p>`;
+    } else if(s==="drill"){
+      if(!DR) drNew();
+      h+=`<div class="escstat"><span>Racha: <b>${ES.dr.streak}</b> · Mejor: <b>${ES.dr.best}</b></span><span>Aciertos: ${pct(ES.dr)}</span></div>`;
+      h+=`<div class="felt escfelt"><div class="esclbl">Crupier muestra</div><div class="cards">${cH(DR.up)}</div><div class="esclbl">Tu mano · ${bjTotTxt(DR.cs)}</div><div class="cards">${DR.cs.map(c=>cH(c)).join("")}</div></div>`;
+      const pair=bjVal(DR.cs[0])===bjVal(DR.cs[1]);
+      h+=`<div class="escacts">${["H","S","D"].concat(pair?["P"]:[]).concat(["R"]).map(a=>`<button class="btn${DR.ans?(a===DR.ans.best.a?" right":a===DR.ans.m?" wrong":""):""}" data-dr="${a}">${ACT[a]}</button>`).join("")}</div>`;
+      if(DR.ans) h+=`<div class="esccoach">${DR.ans.ok?`<b class="good">✓ ¡Eso!</b>`:`<b class="bad">✗ Era ${ACT[DR.ans.best.a]}.</b>`} ${WHY[DR.ans.best.w]}</div>${DR.ans.ok?"":`<button class="btn go" data-esc="drnext">Siguiente</button>`}`;
+      h+=`<p class="note">Contesta rápido: si aciertas pasa sola a la siguiente. La meta es que la tabla te salga sin pensar.</p>`;
+    } else {
+      const hl = BJS&&!BJS.done ? hlKey(bjCur().c,BJS.dealer[0]) : null;
+      h+=`<p class="note">Arriba: la carta del crupier. A la izquierda: tu mano. ${hl?"Está marcada tu mano del coach.":""}</p>`+bjChart(hl);
+    }
+    return h;
+  }
+
+  // ================= PÓKER: mano guiada, ¿quién gana?, jugadas =================
+  function equity(hole,board,nOpp,iters){
+    iters=iters||700; const used=new Set(hole.concat(board)); const rest=[]; for(const s of SUITS) for(const r of RANKS){ const c=r+s; if(!used.has(c)) rest.push(c); }
+    let win=0, tie=0;
+    for(let it=0;it<iters;it++){
+      const need=5-board.length+2*nOpp; for(let i=0;i<need;i++){ const j=i+rnd(rest.length-i); [rest[i],rest[j]]=[rest[j],rest[i]]; }
+      const bd=board.concat(rest.slice(0,5-board.length)); let k=5-board.length;
+      const me=eval7(hole.concat(bd)); let best=1;
+      for(let o=0;o<nOpp;o++){ const e=eval7([rest[k],rest[k+1]].concat(bd)); k+=2; const c=cmpEv(me,e); if(c<0){ best=-1; break; } if(c===0) best=0; }
+      if(best===1) win++; else if(best===0) tie++;
+    }
+    return (win+tie/2)/iters;
+  }
+  function outsOf(hole,board){
+    if(board.length<3||board.length>4) return null;
+    const used=new Set(hole.concat(board)); const cur=eval7(hole.concat(board)); let outs=[];
+    for(const s of SUITS) for(const r of RANKS){ const c=r+s; if(used.has(c)) continue;
+      const nb=board.concat(c), ne=eval7(hole.concat(nb)), be=eval7(nb.length>=5?nb:nb);
+      if(ne[0]>cur[0] && ne[0]>be[0] && (ne[0]>=2 || (ne[0]===1 && ne[1]>=Math.max(...board.map(RV))))) outs.push(c); }
+    return outs;
+  }
+  function preTip(h){
+    const a=RV(h[0]), b=RV(h[1]), hi=Math.max(a,b), lo=Math.min(a,b), suited=h[0][1]===h[1][1], pair=a===b, gap=hi-lo;
+    if(pair&&hi>=10) return ["Premium","Pareja alta: de las mejores manos. Sube."];
+    if(hi===14&&lo>=12) return ["Premium","As con figura: mano muy fuerte. Sube."];
+    if(pair&&hi>=7) return ["Buena","Pareja media: juégala. Si en el flop sale una tercia (1 de cada 8 veces) vas muy bien."];
+    if(pair) return ["Especulativa","Pareja baja: barata está bien; buscas tercia en el flop. Si no llega, suéltala."];
+    if(hi===14&&(suited||lo>=10)) return ["Buena","As con buena compañera: juégala, pero cuidado si alguien sube fuerte."];
+    if(hi>=11&&lo>=10) return ["Buena","Dos figuras: buena mano para entrar."];
+    if(suited&&gap<=2&&lo>=5) return ["Especulativa","Conectadas del mismo palo: si es barato, pueden hacer escalera o color."];
+    if(hi===14) return ["Débil","As con carta baja: parece buena pero suele perder contra un As mejor. Cuidado."];
+    return ["Débil","Mano débil: la mayoría de las veces conviene retirarse antes del flop."];
+  }
+  const STREETS=["Antes del flop","Flop","Turn","River"];
+  let PG=null;
+  const BOTN=["Lupe","Toño","Chayo"];
+  function pgNew(){
+    const d=deck(1), nOpp=1+rnd(3); const hole=[d.pop(),d.pop()]; const opps=[]; for(let i=0;i<nOpp;i++) opps.push({n:BOTN[i],c:[d.pop(),d.pop()]});
+    const board=[d.pop(),d.pop(),d.pop(),d.pop(),d.pop()];
+    PG={d,hole,opps,board,st:0,pot:3,bet:0,folded:false,over:false,msg:"",log:[],ok:0,n:0};
+    pgBet(); escRender();
+  }
+  const boardNow=()=>PG.board.slice(0,[0,3,4,5][PG.st]);
+  function pgBet(){
+    const sizes=[[.5,"medio bote"],[.75,"3/4 del bote"],[1,"todo el bote"],[.33,"un tercio del bote"]]; const z=pickOne(sizes);
+    PG.bet=Math.max(1,Math.round(PG.pot*z[0])); PG.betTxt=z[1]; PG.bettor=pickOne(PG.opps).n;
+    PG.eq=equity(PG.hole,boardNow(),PG.opps.length,900);
+  }
+  function pgAct(call){
+    if(!PG||PG.over) return;
+    const need=PG.bet/(PG.pot+2*PG.bet), good=PG.eq>=need, ok=call===good;
+    score("pk",ok); PG.n++; if(ok) PG.ok++;
+    const eq=Math.round(PG.eq*100), nd=Math.round(need*100);
+    PG.msg=`${ok?`<b class="good">✓ Bien.</b>`:`<b class="bad">✗ Lo mejor era ${good?"pagar":"retirarte"}.</b>`} Tenías ~<b>${eq}%</b> de ganar y necesitabas <b>${nd}%</b> para que pagar convenga (pagas ${PG.bet} para un bote de ${PG.pot+2*PG.bet}).`;
+    if(!call){ PG.folded=true; PG.over=true; pgShow(); escRender(); return; }
+    PG.pot+=2*PG.bet;
+    if(PG.st<3){ PG.st++; pgBet(); } else { PG.over=true; pgShow(); }
+    escRender();
+  }
+  function pgShow(){
+    const bd=PG.board, me=eval7(PG.hole.concat(bd)); let res="win", bestOpp=null;
+    PG.opps.forEach(o=>{ o.ev=eval7(o.c.concat(bd)); if(!bestOpp||cmpEv(o.ev,bestOpp.ev)>0) bestOpp=o; });
+    const c=cmpEv(me,bestOpp.ev); res=c>0?"win":c<0?"lose":"tie";
+    PG.res=res; PG.meName=handName(me); PG.bestOpp=bestOpp;
+  }
+  // ¿Quién gana?
+  let PQ=null;
+  function pqNew(){ const d=deck(1); const b=[d.pop(),d.pop(),d.pop(),d.pop(),d.pop()]; const A=[d.pop(),d.pop()], B=[d.pop(),d.pop()];
+    const ea=eval7(A.concat(b)), eb=eval7(B.concat(b)); PQ={b,A,B,ea,eb,win:cmpEv(ea,eb)>0?"A":cmpEv(ea,eb)<0?"B":"T",ans:null}; escRender(); }
+  function pqAns(x){ if(!PQ||PQ.ans) return; PQ.ans=x; score("pq",x===PQ.win); escRender(); }
+
+  function renderPkTab(){
+    const s=SUB.pk;
+    let h=`<div class="seg escsub">${[["mano","Mano guiada"],["quien","¿Quién gana?"],["jugadas","Jugadas"]].map(([k,t])=>`<button data-esub="${k}" class="${s===k?"on":""}">${t}</button>`).join("")}</div>`;
+    if(s==="mano"){
+      if(!PG) pgNew();
+      const bd=boardNow(), me=eval7(PG.hole.concat(bd.length?bd:[])), tip=preTip(PG.hole);
+      h+=`<div class="escstat"><span>Decisiones correctas: <b>${pct(ES.pk)}</b> <small>(${ES.pk.ok}/${ES.pk.n})</small></span><span>Rivales: ${PG.opps.length}</span></div>`;
+      h+=`<div class="felt escfelt"><div class="esclbl">${STREETS[PG.st]} · Bote <b>${PG.pot}</b></div><div class="cards">${PG.board.map((c,i)=>i<bd.length?cH(c):`<div class="slot"></div>`).join("")}</div>`;
+      h+=`<div class="escopps">${PG.opps.map(o=>`<div><span>${o.n}${PG.over&&!PG.folded&&o===PG.bestOpp?" 🏆":""}</span><div class="cards">${o.c.map(c=>cH(PG.over?c:"??",{sm:true})).join("")}</div>${PG.over?`<small>${handName(o.ev)}</small>`:""}</div>`).join("")}</div>`;
+      h+=`<div class="esclbl">Tú${bd.length?" · "+handName(me):""}</div><div class="cards">${PG.hole.map(c=>cH(c)).join("")}</div></div>`;
+      if(PG.msg) h+=`<div class="esccoach">${PG.msg}</div>`;
+      if(!PG.over){
+        const outs=outsOf(PG.hole,bd);
+        h+=`<div class="esccoach esccoach2">`;
+        if(PG.st===0) h+=`<b>Tu mano: ${tip[0]}.</b> ${tip[1]}<br>`;
+        h+=`Probabilidad de ganar contra ${PG.opps.length} rival${PG.opps.length>1?"es":""}: <b>~${Math.round(PG.eq*100)}%</b>`;
+        if(outs&&outs.length) h+=`<br>Outs (cartas que te mejoran): <b>${outs.length}</b> · regla rápida: ×${PG.st===1?4:2} ≈ <b>${Math.min(100,outs.length*(PG.st===1?4:2))}%</b> de que salga una${PG.st===1?" en turn o river":" en el river"}.`;
+        h+=`<br><b>${PG.bettor}</b> apuesta <b>${PG.bet}</b> (${PG.betTxt}). Para pagar necesitas ganar al menos <b>${Math.round(PG.bet/(PG.pot+2*PG.bet)*100)}%</b> de las veces.</div>`;
+        h+=`<div class="escacts two"><button class="btn" data-pk="0">Retirarme</button><button class="btn go" data-pk="1">Pagar ${PG.bet}</button></div>`;
+      } else {
+        const r=PG.res;
+        h+=`<div class="esccoach">${PG.folded?`Te retiraste. Si hubieras seguido hasta el final: ${r==="win"?`<b class="good">ganabas</b> con ${PG.meName}`:r==="lose"?`<b class="bad">perdías</b> contra ${handName(PG.bestOpp.ev)} de ${PG.bestOpp.n}`:"empatabas"}.`
+          : r==="win"?`<b class="good">¡Ganaste el bote de ${PG.pot}!</b> ${PG.meName}.`:r==="lose"?`<b class="bad">Perdiste.</b> ${PG.bestOpp.n} tenía ${handName(PG.bestOpp.ev)}.`:"<b>Empate</b>: se reparte el bote."}
+          <br><span class="mut">Lo que cuenta es decidir bien, no ganar cada mano: pagar cuando las cuentas dan, retirarte cuando no.</span></div><button class="btn go" data-esc="pgnew">Otra mano</button>`;
+      }
+      h+=`<p class="note">Los porcentajes salen de simular cientos de manos al azar con las cartas que ves. Los bots aquí siempre pagan hasta el final.</p>`;
+    } else if(s==="quien"){
+      if(!PQ) pqNew();
+      const show=!!PQ.ans;
+      h+=`<div class="escstat"><span>Aciertos: <b>${pct(ES.pq)}</b> <small>(${ES.pq.ok}/${ES.pq.n})</small></span></div>`;
+      h+=`<div class="felt escfelt"><div class="esclbl">Mesa</div><div class="cards">${PQ.b.map(c=>cH(c)).join("")}</div>
+        <div class="escvs"><div><div class="esclbl">Mano A${show?" · "+handName(PQ.ea):""}</div><div class="cards">${PQ.A.map(c=>cH(c)).join("")}</div></div>
+        <div><div class="esclbl">Mano B${show?" · "+handName(PQ.eb):""}</div><div class="cards">${PQ.B.map(c=>cH(c)).join("")}</div></div></div></div>`;
+      h+=`<div class="escacts three">${[["A","Gana A"],["T","Empate"],["B","Gana B"]].map(([k,t])=>`<button class="btn${show?(k===PQ.win?" right":k===PQ.ans?" wrong":""):""}" data-pq="${k}">${t}</button>`).join("")}</div>`;
+      if(show) h+=`<div class="esccoach">${PQ.ans===PQ.win?`<b class="good">✓ Correcto.</b>`:`<b class="bad">✗ No.</b>`} ${PQ.win==="T"?`Las dos usan la misma mejor jugada de 5 cartas: ${handName(PQ.ea)}.`:`Gana ${PQ.win} con ${handName(PQ.win==="A"?PQ.ea:PQ.eb)} contra ${handName(PQ.win==="A"?PQ.eb:PQ.ea)}.`}<br><span class="mut">Cuenta la mejor combinación de 5 cartas entre tus 2 y las 5 de la mesa.</span></div><button class="btn go" data-esc="pqnew">Otra</button>`;
+    } else {
+      const ex=[["Escalera real","A♠ K♠ Q♠ J♠ 10♠","La mejor. Casi nunca la vas a ver."],["Escalera de color","9♥ 8♥ 7♥ 6♥ 5♥","Cinco seguidas del mismo palo."],["Póker","Q♣ Q♦ Q♥ Q♠ 3♦","Cuatro iguales."],["Full","8♠ 8♦ 8♥ K♣ K♠","Tercia + par."],["Color","A♦ J♦ 8♦ 5♦ 2♦","Cinco del mismo palo."],["Escalera","10♣ 9♦ 8♠ 7♥ 6♣","Cinco seguidas de cualquier palo. El As puede ir arriba (A-K-Q-J-10) o abajo (5-4-3-2-A)."],["Tercia","7♠ 7♥ 7♦ K♣ 2♠","Tres iguales."],["Doble par","J♠ J♥ 4♦ 4♣ A♠","Dos pares distintos."],["Par","10♥ 10♠ K♦ 6♣ 3♥","Dos iguales."],["Carta alta","A♣ Q♦ 9♠ 6♥ 2♣","Nada: gana la carta más alta."]];
+      h+=`<div class="escrank">${ex.map((x,i)=>`<div><b>${i+1}. ${x[0]}</b><span class="mono">${x[1].replace(/([♥♦])/g,'<i class="r">$1</i>')}</span><small>${x[2]}</small></div>`).join("")}</div>
+        <div class="esccoach"><b>Tips rápidos</b><br>• Si empatan en jugada, gana la carta más alta que sigue (el "kicker").<br>• El palo nunca desempata: si las dos manos son iguales, se reparte el bote.<br>• <b>Pot odds:</b> si pagas 10 para ganar un bote de 40, necesitas ganar 1 de cada 4 veces (25%).<br>• <b>Regla del 2 y 4:</b> en el flop, outs × 4 ≈ % de ligar en turn o river; en el turn, outs × 2.</div>`;
+    }
+    return h;
+  }
+
+  // ================= BACCARAT: reglas y quiz =================
+  const bv=c=>bacVal(c);
+  const bt=cs=>bacTot(cs);
+  function bankerDraws(btot,p3){ if(p3===null) return btot<=5; return btot<=2 || (btot===3&&p3!==8) || (btot===4&&p3>=2&&p3<=7) || (btot===5&&p3>=4&&p3<=7) || (btot===6&&(p3===6||p3===7)); }
+  function bankWhy(btot,p3){
+    if(p3===null) return `El Jugador se plantó, así que la Banca sigue la regla simple: pide con 0–5 y se planta con 6–7. Tiene ${btot}: <b>${btot<=5?"pide":"se planta"}</b>.`;
+    const rule={0:"con 0, 1 o 2 la Banca siempre pide",1:"con 0, 1 o 2 la Banca siempre pide",2:"con 0, 1 o 2 la Banca siempre pide",3:"con 3 pide, salvo que la 3ª carta del Jugador sea 8",4:"con 4 pide si la 3ª del Jugador es 2–7",5:"con 5 pide si la 3ª del Jugador es 4–7",6:"con 6 pide solo si la 3ª del Jugador es 6 o 7",7:"con 7 la Banca siempre se planta"}[btot];
+    return `La 3ª carta del Jugador vale ${p3}; ${rule}. → <b>${bankerDraws(btot,p3)?"pide":"se planta"}</b>.`;
+  }
+  let BQ=null;
+  function bqNew(){
+    for(let tries=0;tries<200;tries++){
+      const d=deck(1); const P=[d.pop(),d.pop()], B=[d.pop(),d.pop()]; const pt=bt(P), btt=bt(B);
+      const type=rnd(3);
+      if(type===0){ if(pt>=8||btt>=8) continue; BQ={type,P,B,q:"¿El Jugador pide tercera carta?",ans:pt<=5?"si":"no",why:`El Jugador tiene ${pt}. Regla: con 0–5 pide, con 6–7 se planta.`}; break; }
+      if(type===1){ if(pt>=8||btt>=8||btt>=7) continue; let P3=null; const Pc=P.slice(); if(pt<=5){ Pc.push(d.pop()); P3=bv(Pc[2]); }
+        BQ={type,P:Pc,B,q:"¿La Banca pide tercera carta?",ans:bankerDraws(btt,P3)?"si":"no",why:bankWhy(btt,P3)}; break; }
+      // ¿quién gana? (mano completa)
+      const Pc=P.slice(), Bc=B.slice(); let p3=null;
+      if(pt<8&&btt<8){ if(pt<=5){ Pc.push(d.pop()); p3=bv(Pc[2]); } if(bankerDraws(btt,p3)) Bc.push(d.pop()); }
+      const a=bt(Pc), b=bt(Bc);
+      BQ={type,P:Pc,B:Bc,q:"¿Quién gana?",ans:a>b?"P":b>a?"B":"T",why:`Jugador ${a}, Banca ${b}. Solo cuenta la última cifra: 10, J, Q y K valen 0; por ejemplo 7 + 8 = 15 → vale 5.`}; break;
+    }
+    BQ.res=null; escRender();
+  }
+  function bqAns(x){ if(!BQ||BQ.res) return; BQ.res=x; score("bq",x===BQ.ans); escRender(); }
+  function renderBacTab(){
+    const s=SUB.bac;
+    let h=`<div class="seg escsub">${[["leccion","Lección"],["quiz","Quiz"]].map(([k,t])=>`<button data-esub="${k}" class="${s===k?"on":""}">${t}</button>`).join("")}</div>`;
+    if(s==="leccion"){
+      h+=`<div class="esccoach"><b>Cómo se cuenta</b><br>As = 1 · del 2 al 9 valen lo que dicen · 10, J, Q, K = 0.<br>Solo cuenta la <b>última cifra</b>: 9 + 6 = 15 → vale <b>5</b>. Gana quien quede más cerca de 9.</div>
+        <div class="esccoach"><b>Natural</b>: si el Jugador o la Banca tiene 8 o 9 con dos cartas, nadie pide más.</div>
+        <div class="esccoach"><b>El Jugador</b> pide tercera carta con 0–5 y se planta con 6–7.</div>
+        <div class="esccoach"><b>La Banca</b> (si el Jugador se plantó): pide con 0–5, se planta con 6–7.<br>Si el Jugador pidió, depende de esa 3ª carta:
+          <table class="escbt"><tr><th>Banca tiene</th><th>Pide si la 3ª del Jugador es…</th></tr>
+          <tr><td>0, 1, 2</td><td>siempre pide</td></tr><tr><td>3</td><td>cualquiera menos 8</td></tr><tr><td>4</td><td>2 a 7</td></tr><tr><td>5</td><td>4 a 7</td></tr><tr><td>6</td><td>6 o 7</td></tr><tr><td>7</td><td>nunca</td></tr></table>
+          <span class="mut">No tienes que memorizarla: el crupier lo hace solo. Pero así entiendes lo que pasa.</span></div>
+        <div class="esccoach"><b>¿A qué le conviene apostar?</b>
+          <table class="escbt"><tr><th>Apuesta</th><th>Paga</th><th>Ventaja de la casa</th></tr>
+          <tr><td>Banca</td><td>0.95 a 1 (comisión 5%)</td><td class="good">1.06%</td></tr>
+          <tr><td>Jugador</td><td>1 a 1</td><td>1.24%</td></tr>
+          <tr><td>Empate</td><td>8 a 1</td><td class="bad">14.4%</td></tr></table>
+          La <b>Banca</b> es la mejor apuesta aunque cobre comisión: gana un poquito más seguido. El <b>Empate</b> paga mucho pero es la peor apuesta del casino.<br><span class="mut">Las rachas del marcador no predicen nada: cada mano es independiente.</span></div>`;
+    } else {
+      if(!BQ) bqNew();
+      const show=!!BQ.res, ok=BQ.res===BQ.ans;
+      h+=`<div class="escstat"><span>Aciertos: <b>${pct(ES.bq)}</b> <small>(${ES.bq.ok}/${ES.bq.n})</small></span></div>`;
+      h+=`<div class="felt escfelt escvs"><div><div class="esclbl jug">Jugador${show||BQ.type!==2?" · "+bt(BQ.P):""}</div><div class="cards">${BQ.P.map((c,i)=>cH(c,{hl:i===2})).join("")}</div></div><div><div class="esclbl ban">Banca${show||BQ.type!==2?" · "+bt(BQ.B):""}</div><div class="cards">${BQ.B.map(c=>cH(c)).join("")}</div></div></div>`;
+      h+=`<div class="escq">${BQ.q}</div>`;
+      const opts = BQ.type===2 ? [["P","Jugador"],["T","Empate"],["B","Banca"]] : [["si","Sí, pide"],["no","No, se planta"]];
+      h+=`<div class="escacts ${opts.length===3?"three":"two"}">${opts.map(([k,t])=>`<button class="btn${show?(k===BQ.ans?" right":k===BQ.res?" wrong":""):""}" data-bq="${k}">${t}</button>`).join("")}</div>`;
+      if(show) h+=`<div class="esccoach">${ok?`<b class="good">✓ Correcto.</b>`:`<b class="bad">✗ No.</b>`} ${BQ.why}</div><button class="btn go" data-esc="bqnew">Otra</button>`;
+    }
+    return h;
+  }
+
+  // ================= RULETA: pagos y quiz =================
+  const RBETS=[["n17","Pleno (un número: 17)",36,1],["red","Rojo",2,18],["even","Par",2,18],["low","1 a 18",2,18],["d2","2ª docena (13–24)",3,12],["c3","3ª columna",3,12]];
+  let RQ=null;
+  function rqNew(){
+    const type=rnd(2);
+    if(type===0){ const b=pickOne(RBETS), amt=pickOne([10,20,50,100]); let n=rnd(37); if(Math.random()<.6){ for(let i=0;i<60;i++){ n=rnd(37); if(rulMult(b[0],n)>0) break; } }
+      const back=amt*rulMult(b[0],n); const prof=back?back-amt:-amt;
+      const opts=shuffle([...new Set([prof, b[2]===36?amt*35+amt:amt*(b[2]-1)+amt, amt*(b[2]===36?17:b[2]), -amt, amt].filter(x=>x!==undefined))]).slice(0,4); if(!opts.includes(prof)) opts[0]=prof;
+      RQ={type,q:`Apostaste <b>$${amt}</b> a <b>${b[1]}</b> y salió el <b>${n}</b>${n===0?"":REDS.has(n)?" rojo":" negro"}. ¿Cuánto ganaste (o perdiste)?`,opts:shuffle(opts).map(v=>[String(v),v>0?`+$${v}`:v<0?`−$${-v}`:"$0"]),ans:String(prof),
+        why: back?`${b[1]} paga ${b[2]===36?"35":b[2]-1} a 1: ganas $${prof} y te regresan tus $${amt}.`:(n===0?`Salió el 0: pierden todas las apuestas de afuera (rojo/negro, par/non, docenas…).`:`El ${n} no entra en ${b[1]}: pierdes tus $${amt}.`)};
+    } else {
+      const qs=[
+        {q:"¿Qué apuesta le deja menos ventaja a la casa?",opts:[["a","Pleno"],["b","Rojo"],["c","Docena"],["d","Todas igual"]],ans:"d",why:"En ruleta europea <b>todas</b> las apuestas tienen la misma ventaja: 2.7% (1 de 37, por el cero). Cambia el riesgo, no la ventaja."},
+        {q:"¿De dónde sale la ventaja de la casa?",opts:[["a","Del cero"],["b","De que el crupier hace trampa"],["c","De los números rojos"]],ans:"a",why:"Un pleno paga 35 a 1, pero hay 37 números. Ese número de más, el <b>0</b>, es la ganancia del casino."},
+        {q:"Salió rojo 6 veces seguidas. ¿Qué es más probable ahora?",opts:[["a","Negro"],["b","Rojo"],["c","Igual de probable"]],ans:"c",why:"La bola no tiene memoria: cada tiro es independiente. Rojo y negro siguen en 18 de 37 cada uno."},
+        {q:"¿Cuánto paga una docena?",opts:[["a","1 a 1"],["b","2 a 1"],["c","3 a 1"],["d","11 a 1"]],ans:"b",why:"Docenas y columnas pagan <b>2 a 1</b>: apuestas 10, ganas 20 y te regresan tus 10."},
+        {q:"¿Cuánto paga un pleno (un solo número)?",opts:[["a","35 a 1"],["b","36 a 1"],["c","30 a 1"],["d","18 a 1"]],ans:"a",why:"Un pleno paga <b>35 a 1</b>: apuestas 10, ganas 350 y te regresan tus 10."},
+        {q:"¿Qué pasa con tu apuesta a Rojo si sale el 0?",opts:[["a","Se regresa"],["b","Se pierde"],["c","Se queda para el siguiente tiro"]],ans:"b",why:"En esta mesa, con el <b>0 pierden</b> todas las apuestas de afuera."}
+      ];
+      const x=pickOne(qs); RQ={type,q:x.q,opts:x.opts,ans:x.ans,why:x.why};
+    }
+    RQ.res=null; escRender();
+  }
+  function rqAns(x){ if(!RQ||RQ.res) return; RQ.res=x; score("rq",x===RQ.ans); escRender(); }
+  function renderRulTab(){
+    const s=SUB.rul;
+    let h=`<div class="seg escsub">${[["leccion","Lección"],["quiz","Quiz"]].map(([k,t])=>`<button data-esub="${k}" class="${s===k?"on":""}">${t}</button>`).join("")}</div>`;
+    if(s==="leccion"){
+      h+=`<div class="esccoach"><b>Cuánto paga cada apuesta</b>
+        <table class="escbt"><tr><th>Apuesta</th><th>Paga</th><th>Le atinas</th></tr>
+        <tr><td>Pleno (1 número)</td><td>35 a 1</td><td>1 de 37 (2.7%)</td></tr>
+        <tr><td>Docena o columna</td><td>2 a 1</td><td>12 de 37 (32%)</td></tr>
+        <tr><td>Rojo/Negro, Par/Non, 1–18/19–36</td><td>1 a 1</td><td>18 de 37 (49%)</td></tr></table>
+        <span class="mut">"Paga 35 a 1" = ganas 35 veces lo apostado y además te regresan tu apuesta.</span></div>
+        <div class="esccoach"><b>La verdad incómoda</b><br>Hay 37 números (del 0 al 36), pero los pagos están calculados como si hubiera 36. Ese <b>0</b> es la ganancia de la casa: <b>2.7%</b> en <b>todas</b> las apuestas.<br>No hay apuesta "inteligente": un pleno y el rojo pierden lo mismo a la larga. Solo cambia qué tan emocionante es.</div>
+        <div class="esccoach"><b>Mitos</b><br>• "Ya toca negro": no. La bola no tiene memoria.<br>• "Doblar cada vez que pierdes (martingala)": ganas poquito muchas veces hasta que una racha mala te deja sin fichas.<br>• El historial de números es entretenimiento, no predice nada.</div>`;
+    } else {
+      if(!RQ) rqNew();
+      const show=!!RQ.res, ok=RQ.res===RQ.ans;
+      h+=`<div class="escstat"><span>Aciertos: <b>${pct(ES.rq)}</b> <small>(${ES.rq.ok}/${ES.rq.n})</small></span></div>`;
+      h+=`<div class="escq">${RQ.q}</div><div class="escacts ${RQ.opts.length>=4?"two":RQ.opts.length===3?"three":"two"}">${RQ.opts.map(([k,t])=>`<button class="btn${show?(k===RQ.ans?" right":k===RQ.res?" wrong":""):""}" data-rq="${k}">${t}</button>`).join("")}</div>`;
+      if(show) h+=`<div class="esccoach">${ok?`<b class="good">✓ Correcto.</b>`:`<b class="bad">✗ No.</b>`} ${RQ.why}</div><button class="btn go" data-esc="rqnew">Otra</button>`;
+    }
+    return h;
+  }
+
+  // ================= pantalla =================
+  function escRender(){
+    const box=$e("escBody"); if(!box||$e("esc").hidden) return;
+    $e("escTabs").querySelectorAll("[data-etab]").forEach(b=>b.classList.toggle("on",b.dataset.etab===TAB));
+    try{ box.innerHTML = TAB==="bj"?renderBjTab():TAB==="pk"?renderPkTab():TAB==="bac"?renderBacTab():renderRulTab(); }
+    catch(e){ console.error(e); box.innerHTML=`<div class="esccoach">Algo falló aquí. <button class="btn sm" data-esc="reset">Empezar de nuevo</button></div>`; }
+  }
+  function escOpen(){ $e("lobby").hidden=true; $e("esc").hidden=false; window.scrollTo(0,0); escRender(); }
+  function escClose(){ $e("esc").hidden=true; $e("lobby").hidden=false; const b=$e("escBtn"); if(b) b.scrollIntoView({block:"center"}); }
+  window.ESC={open:escOpen, close:escClose, bjBest, equity};
+  document.addEventListener("click",e=>{
+    const t=e.target.closest("button,summary"); if(!t) return;
+    if(t.id==="escBtn"){ escOpen(); return; }
+    if(t.id==="escBack"){ escClose(); return; }
+    if(!t.closest("#esc")) return;
+    const d=t.dataset;
+    if(d.etab){ TAB=d.etab; window.scrollTo(0,0); escRender(); return; }
+    if(d.esub){ SUB[TAB]=d.esub; escRender(); return; }
+    if(d.bj){ bjMove(d.bj); return; }
+    if(d.dr){ drAns(d.dr); return; }
+    if(d.pk){ pgAct(d.pk==="1"); return; }
+    if(d.pq){ pqAns(d.pq); return; }
+    if(d.bq){ bqAns(d.bq); return; }
+    if(d.rq){ rqAns(d.rq); return; }
+    const a=d.esc;
+    if(a==="bjnew") bjNew(); else if(a==="drnext") drNew(); else if(a==="pgnew") pgNew(); else if(a==="pqnew") pqNew(); else if(a==="bqnew") bqNew(); else if(a==="rqnew") rqNew();
+    else if(a==="reset"){ BJS=DR=PG=PQ=BQ=RQ=null; escRender(); }
+  });
+})();
