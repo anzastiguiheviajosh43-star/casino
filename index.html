@@ -6,14 +6,14 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Mesa de 4">
-<meta name="theme-color" content="#0a2a21">
+<meta name="apple-mobile-web-app-title" content="Magic Casino">
+<meta name="theme-color" content="#160828">
 <link rel="manifest" href="manifest.webmanifest">
 <link rel="icon" href="icon-192.png">
 <link rel="apple-touch-icon" href="icon-180.png">
 <style>:root{box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}[hidden]{display:none!important}</style>
-<title>Mesa de Cuatro</title>
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Silkscreen:wght@400;700&display=swap">
+<title>Magic Casino</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Marcellus&family=Cinzel:wght@700;900&family=Cinzel+Decorative:wght@900&family=Barlow+Semi+Condensed:wght@500;600;700&family=IBM+Plex+Mono:wght@500;600&family=Silkscreen:wght@400;700&display=swap">
 <style>
 /* Layout: una columna tipo mesa de casino — barra de mesa, 4 asientos, paño del juego, controles abajo */
 :root{
@@ -462,6 +462,161 @@ img.l2ci{width:20px;height:20px;flex:none;display:inline-block;vertical-align:mi
 .chip.l2bet b{position:absolute;inset:0;display:grid;place-items:center;font:800 .82rem/1 var(--ui);letter-spacing:-.01em;text-shadow:0 1px 2px rgba(0,0,0,.55);pointer-events:none}.chip.l2bet img{width:100%;height:100%;display:block;image-rendering:pixelated;filter:drop-shadow(0 2px 2px rgba(0,0,0,.45))}
 .chip.l2bet.sel{box-shadow:none}.chip.l2bet.sel img{filter:drop-shadow(0 0 0 var(--brass)) drop-shadow(0 0 5px var(--brass)) drop-shadow(0 6px 6px rgba(0,0,0,.5))}
 img.l2mini{width:15px;height:15px;vertical-align:-3px;margin-right:3px;image-rendering:pixelated}
+/* =============== v3 · estilo 3D morado y dorado con Don Dado =============== */
+:root{--felt:#2e0f55;--felt-deep:#12071f;--felt-line:#6b4a8f;--panel:rgba(20,8,36,.55);--brass:#e8b64c;--muted:#cdbde9;
+  --display:"Cinzel",Georgia,serif;--goldg:linear-gradient(180deg,#fff1b8 0%,#ffcf57 30%,#e19a1f 70%,#a8650c 100%);
+  --pan:linear-gradient(180deg,rgba(43,20,82,.94),rgba(21,10,41,.94));--goldline:#c9953a}
+body{background:radial-gradient(60% 30% at 8% 4%,rgba(255,79,154,.2),transparent 70%) fixed,radial-gradient(60% 30% at 95% 10%,rgba(139,77,255,.32),transparent 70%) fixed,radial-gradient(120% 60% at 50% 0%,#2e0f55 0%,#160828 55%,#0b0414 100%) fixed,#0b0414}
+input,select{background:#12081f;border-color:#6e5a8f}
+/* fondo del lobby: ciudad nocturna + los sprites pixel que ya caen */
+body.l2on #l2bgimg{background:radial-gradient(50% 22% at 20% 72%,rgba(255,120,60,.18),transparent 70%),radial-gradient(40% 20% at 85% 64%,rgba(255,79,154,.18),transparent 70%),linear-gradient(180deg,transparent 55%,rgba(18,5,31,.9) 85%),repeating-linear-gradient(90deg,#1b0a2e 0 26px,#2a0f45 26px 34px,#160822 34px 58px,#22103a 58px 70px) bottom/100% 34% no-repeat,radial-gradient(120% 70% at 50% 0%,#3b0f55 0%,#1a0830 60%,#0b0414 100%);filter:none;image-rendering:auto}
+body.l2on::before{background:linear-gradient(rgba(11,4,20,.05),rgba(11,4,20,.45))}
+#l2bg{opacity:.55}
+/* paneles, títulos y botones con relieve */
+.l2panel,.l2sh{background:var(--pan);border:2px solid var(--goldline);border-radius:20px;box-shadow:inset 0 1px 0 rgba(255,255,255,.18),inset 0 -3px 0 rgba(0,0,0,.35),0 0 0 1px #4a2c0a,0 10px 22px rgba(0,0,0,.5);backdrop-filter:none;-webkit-backdrop-filter:none}
+.l2panel h2,.l2sh h2,.mname b{font-family:var(--display);font-weight:700;background:linear-gradient(180deg,#fff3c4,#f2c14e 50%,#b97a18);-webkit-background-clip:text;background-clip:text;color:transparent}
+.btn{background:linear-gradient(180deg,#3a1d66,#1d0e36);border:1px solid #8a63c4;box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 3px 0 #120822,0 6px 10px rgba(0,0,0,.35)}
+.btn:active:not(:disabled){transform:translateY(2px);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 1px 0 #120822}
+.btn.go{background:var(--goldg);border-color:#7a4a0c;color:#2a1406;box-shadow:inset 0 2px 0 rgba(255,255,255,.7),inset 0 -3px 0 rgba(0,0,0,.18),0 4px 0 #7a4a0c,0 8px 14px rgba(232,169,58,.3)}
+.btn.warn{color:#ff9aa8}
+.btn[data-move]{--l:#c9a6ff;--m:#7b3fe4;--d:#3f1a8a;color:#fff;background:linear-gradient(180deg,var(--l),var(--m) 50%,var(--d));border:1px solid rgba(0,0,0,.4);text-shadow:0 1px 0 rgba(0,0,0,.45);box-shadow:inset 0 2px 0 rgba(255,255,255,.45),inset 0 -4px 0 rgba(0,0,0,.22),0 4px 0 var(--d),0 8px 12px rgba(0,0,0,.4)}
+.btn[data-move="hit"]{--l:#8dffa9;--m:#2fbf5a;--d:#156d31}
+.btn[data-move="double"],.btn[data-move="call"],.btn[data-move="check"]{--l:#9cc8ff;--m:#2b7bff;--d:#163f94}
+.btn[data-move="split"]{--l:#ffd08a;--m:#f08a1a;--d:#8a4a08}
+.btn[data-move="surrender"],.btn[data-move="fold"]{--l:#ff9aa8;--m:#e0273f;--d:#7a1022}
+.btn[data-move]:disabled{--l:#6d6680;--m:#4a4458;--d:#2c2836;opacity:.6}
+.tabs{background:rgba(10,4,20,.65);border:2px solid var(--goldline)}
+.tabs button.on{background:var(--goldg);color:#2a1406;box-shadow:inset 0 2px 0 rgba(255,255,255,.6),0 2px 0 #7a4a0c}
+.seg{background:rgba(0,0,0,.35)!important}
+/* barra de arriba */
+#toLobby,#solBack,#escBack{border-radius:999px;border:2px solid var(--goldline);color:#ffd98a}
+/* asientos: la ficha de cada quien y aro dorado cuando le toca */
+.seat{background:var(--pan);border:1px solid rgba(201,149,58,.6);box-shadow:inset 0 1px 0 rgba(255,255,255,.12),0 4px 8px rgba(0,0,0,.35)}
+.seat.me{border:2px solid #ffcf57}
+.seat.turn{animation:v3turn 1.1s ease-in-out infinite}
+@keyframes v3turn{0%,100%{box-shadow:0 0 0 2px #ffcf57,0 0 10px rgba(255,207,87,.45)}50%{box-shadow:0 0 0 4px #ffcf57,0 0 22px rgba(255,207,87,.85)}}
+.seat.free{background:rgba(0,0,0,.2);border:1.5px dashed rgba(255,230,160,.45)}
+/* fieltro con marco dorado; color según el juego */
+.felt{border:0;border-radius:26px;margin:0 6px;background:radial-gradient(90% 70% at 50% 16%,#1fae70,#0e6240 62%,#073823);box-shadow:0 0 0 5px #3a1d0a,0 0 0 8px #e2ad4c,0 0 0 10px #6b420f,0 0 28px 8px rgba(139,77,255,.3),inset 0 0 44px rgba(0,0,0,.45)}
+#mesa[data-g="bac"] .felt{background:radial-gradient(90% 70% at 50% 16%,#2a4fa6,#14286b 62%,#0a1538)}
+#mesa[data-g="rul"] .felt{background:radial-gradient(90% 70% at 50% 16%,#8e1d33,#5c0f20 62%,#33060f)}
+/* Don Dado en la mesa */
+.v3dealer{position:relative;display:flex;flex-direction:column;align-items:center;height:96px;margin:4px 0 -14px;z-index:2;pointer-events:none}
+.v3dealer img{height:112px;margin-top:-16px;filter:drop-shadow(0 8px 10px rgba(0,0,0,.6));transition:transform .25s}
+.v3dealer img.pop{animation:v3pop .5s ease-out}
+@keyframes v3pop{0%{transform:scale(.85) translateY(6px)}60%{transform:scale(1.06)}100%{transform:none}}
+.v3dn{position:absolute;bottom:2px;padding:2px 12px;border-radius:999px;background:linear-gradient(180deg,#3a1d66,#150a29);border:2px solid #e2ad4c;font:700 10px var(--display);letter-spacing:.14em;color:#ffd98a;white-space:nowrap}
+.v3say{position:absolute;left:calc(50% + 62px);top:6px;max-width:min(170px,calc(50% - 70px));padding:7px 10px;border-radius:14px 14px 14px 4px;background:linear-gradient(180deg,#fff8e6,#f1e3c2);border:2px solid var(--goldline);color:#2a1406;font:600 .82rem/1.25 var(--ui);box-shadow:0 6px 12px rgba(0,0,0,.45);animation:v3pop .35s ease-out}
+/* resultado de la ronda (no estorba: se quita solo) */
+.v3res{position:fixed;left:50%;top:22%;transform:translateX(-50%);z-index:70;width:min(300px,86vw);padding:96px 16px 14px;border-radius:22px;background:var(--pan);border:3px solid #e2ad4c;box-shadow:0 0 0 2px #4a2c0a,0 0 40px rgba(255,207,87,.3),0 16px 30px rgba(0,0,0,.6);display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;pointer-events:none;animation:v3res 2.9s ease-out forwards}
+.v3res img{position:absolute;top:-70px;height:170px;filter:drop-shadow(0 10px 14px rgba(0,0,0,.6))}
+.v3res .t{font:900 1.7rem/1 var(--display);background:linear-gradient(180deg,#fff3c4,#f2c14e 50%,#b97a18);-webkit-background-clip:text;background-clip:text;color:transparent}
+.v3res .a{font:700 1.9rem var(--ui)}.v3res .a.up{color:#7dff9f;text-shadow:0 0 12px rgba(125,255,159,.45)}.v3res .a.down{color:#ff8a9a}
+.v3res .q{font-size:.9rem;color:#e5dcf7}
+@keyframes v3res{0%{opacity:0;transform:translate(-50%,16px) scale(.92)}10%{opacity:1;transform:translate(-50%,0) scale(1)}82%{opacity:1}100%{opacity:0;transform:translate(-50%,-8px)}}
+/* stickers con relieve */
+.reacts button{background:radial-gradient(circle at 50% 35%,#3a1d66,#150a29 75%);border:1.5px solid var(--goldline);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 3px 0 #2a1406}
+/* barra de abajo en la mesa */
+.dock{background:linear-gradient(180deg,#1d0c36,#0b0414);border-top:2px solid var(--goldline)}
+.dock.alert{border-color:#ffcf57}
+.callout{background:var(--goldg);color:#2a1406;box-shadow:inset 0 2px 0 rgba(255,255,255,.6),0 3px 0 #7a4a0c}
+/* avisos (toast) con Don Dado */
+.toast{background:linear-gradient(180deg,#fff8e6,#f1e3c2);color:#2a1406;border:2px solid var(--goldline);font-weight:600;padding:10px 14px 10px 60px;min-height:46px;display:flex;align-items:center;box-shadow:0 10px 22px rgba(0,0,0,.5)}
+.toast::before{content:"";position:absolute;left:2px;bottom:0;width:54px;height:64px;background:url(dd-senala.webp) bottom center/contain no-repeat;transform:scaleX(-1)}
+.hostwarn{background:linear-gradient(180deg,rgba(255,248,230,.12),rgba(255,248,230,.05));border:2px solid var(--goldline)}
+.hostwarn.who{padding-left:76px;position:relative;min-height:90px}
+.hostwarn.who::before{content:"";position:absolute;left:4px;bottom:0;width:68px;height:88px;background:url(dd-maestro.webp) bottom center/contain no-repeat}
+/* lobby */
+.v3hero{position:relative;height:300px;margin:-14px calc(-1 * max(16px,env(safe-area-inset-left,0px))) 0;overflow:hidden;border-bottom:3px solid var(--goldline);box-shadow:0 8px 24px rgba(0,0,0,.55)}
+.v3city{position:absolute;inset:0;background:radial-gradient(70% 60% at 30% 40%,rgba(255,120,60,.22),transparent 70%),linear-gradient(180deg,transparent 60%,#12051f 96%),repeating-linear-gradient(90deg,#1b0a2e 0 26px,#2a0f45 26px 34px,#160822 34px 58px) bottom/100% 36% no-repeat,linear-gradient(180deg,#24093f,#3b0f55 60%,#12051f)}
+.v3top{position:absolute;top:10px;right:14px;z-index:3}
+.v3rnd{width:44px;height:44px;border-radius:50%;border:2px solid var(--goldline);background:radial-gradient(circle at 35% 30%,#3a1d66,#150a29);display:grid;place-items:center;padding:0;cursor:pointer;box-shadow:inset 0 1px 0 rgba(255,255,255,.25),0 4px 8px rgba(0,0,0,.5)}
+.v3rnd svg{fill:none;stroke:#ffd98a;stroke-width:2}
+.v3brand{position:absolute;left:18px;top:56px;width:58%;display:flex;flex-direction:column;gap:6px;z-index:2}
+.v3crown{width:34px;height:26px;fill:#ffcf57;filter:drop-shadow(0 2px 0 #7a4a0c)}
+.v3title{font:900 2.45rem/.92 "Cinzel Decorative","Cinzel",serif;background:linear-gradient(180deg,#fff3c4,#f2c14e 50%,#b97a18);-webkit-background-clip:text;background-clip:text;color:transparent;filter:drop-shadow(0 3px 0 #5c3409) drop-shadow(0 0 14px rgba(255,190,80,.45))}
+.v3sub{font:italic 700 1.05rem var(--ui);color:#ff8ac0;text-shadow:0 0 10px rgba(255,79,154,.7)}
+.v3dd{position:absolute;right:-34px;bottom:-4px;height:240px;z-index:1;filter:drop-shadow(0 10px 18px rgba(0,0,0,.6));animation:v3bob 4s ease-in-out infinite}
+@keyframes v3bob{0%,100%{transform:translateY(0)}50%{transform:translateY(-5px)}}
+.v3hbub{position:absolute;left:16px;bottom:32px;width:52%;padding:8px 11px;border-radius:16px 16px 4px 16px;background:linear-gradient(180deg,#fff8e6,#f1e3c2);border:2px solid var(--goldline);color:#2a1406;font:600 .86rem/1.25 var(--ui);z-index:2;box-shadow:0 6px 14px rgba(0,0,0,.45)}
+.v3hbub b,.v3slbub b,.v3coach b{display:block;font:700 10px var(--display);letter-spacing:.14em;color:#6c2bd9;margin-bottom:2px}
+.l2me{background:var(--pan);border-color:var(--goldline);margin-top:-22px;position:relative;z-index:2}
+.l2offbar{padding-left:70px;position:relative;min-height:70px}
+.v3offimg{position:absolute;left:2px;bottom:0;height:78px}
+.l2gi{background:radial-gradient(circle at 50% 35%,#3a1d66,#150a29 80%);border:2px solid var(--goldline);box-shadow:inset 0 1px 0 rgba(255,255,255,.2),0 4px 0 #2a1406,0 7px 12px rgba(0,0,0,.45)}
+.l2games button{color:#e5dcf7}
+.l2games .l2sol .l2gi{border-color:#ffcf57}
+/* Mesa nueva: cabina de tragamonedas con palanca */
+.v3slhead{display:flex;align-items:flex-end;gap:6px;margin:-6px 0 -4px}
+.v3slimg{height:96px;transform:scaleX(-1);filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
+.v3slbub{flex:1;margin-bottom:14px;padding:8px 11px;border-radius:16px 16px 16px 4px;background:linear-gradient(180deg,#fff8e6,#f1e3c2);border:2px solid var(--goldline);color:#2a1406;font:600 .86rem/1.25 var(--ui)}
+#slot2 .sl-title b{font:900 1.3rem var(--display);letter-spacing:.12em;background:linear-gradient(180deg,#fff3c4,#f2c14e 50%,#b97a18);-webkit-background-clip:text;background-clip:text;color:transparent;text-shadow:none;filter:drop-shadow(0 2px 0 #5c3409)}
+.v3cab{position:relative;margin-right:30px}
+#slot2 .sl-frame{padding:8px;border-radius:20px;background:linear-gradient(180deg,#4b1a86,#22093e);border:3px solid #e2ad4c;box-shadow:0 0 0 4px #7a1022,0 0 0 6px #3a0a14,0 0 26px rgba(255,79,154,.35),inset 0 2px 0 rgba(255,255,255,.25)}
+#slot2 .sl-frame::before{content:"";position:absolute;inset:-9px;border-radius:24px;pointer-events:none;background:radial-gradient(circle,#ffe9a8 0 2px,transparent 3px) 0 0/18px 18px;-webkit-mask:linear-gradient(#000 0 0) content-box,linear-gradient(#000 0 0);-webkit-mask-composite:xor;mask-composite:exclude;padding:4px;animation:v3lights 1s steps(2) infinite;opacity:.9}
+@keyframes v3lights{50%{background-position:9px 0}}
+#slot2 .sl-in{border:2px solid rgba(255,230,160,.5);box-shadow:inset 0 0 12px rgba(0,0,0,.5)}
+#slot2 .sl-lbl{font:700 10px var(--display);letter-spacing:.14em;color:#ffe9a8;text-shadow:none}
+#slot2 .sl-reel{background:linear-gradient(#cfc6b6,#fbf6ea 26%,#fbf6ea 74%,#cfc6b6);box-shadow:inset 0 0 0 2px #8a5413,inset 0 6px 10px rgba(0,0,0,.25),inset 0 -6px 10px rgba(0,0,0,.25)}
+#slot2 .sl-pay{background:#ff4f9a;box-shadow:0 0 8px #ff4f9a}
+#slot2 .sl-arw.l{border-left-color:#ffcf57}#slot2 .sl-arw.r{border-right-color:#ffcf57}
+.l2sign{display:none!important}
+.v3lever{position:absolute;right:-30px;top:38px;width:30px;height:140px;padding:0;border:0;background:none;cursor:pointer}
+.v3lever::before{content:"";position:absolute;left:4px;bottom:6px;width:22px;height:34px;border-radius:6px;background:linear-gradient(90deg,#6b420f,#e2ad4c,#6b420f);box-shadow:0 3px 6px rgba(0,0,0,.5)}
+.v3stick{position:absolute;left:10px;bottom:30px;width:10px;height:96px;border-radius:5px;background:linear-gradient(90deg,#8a8a8a,#f2f2f2 45%,#8a8a8a);transform-origin:50% 100%;transition:transform .18s ease-in}
+.v3knob{position:absolute;left:1px;bottom:116px;width:28px;height:28px;border-radius:50%;background:radial-gradient(circle at 35% 30%,#ff9ab0,#e0273f 55%,#6a0a1c);box-shadow:0 4px 8px rgba(0,0,0,.5),inset 0 -2px 0 rgba(0,0,0,.3);transition:transform .18s ease-in}
+.v3lever.pull .v3stick{transform:scaleY(.25)}
+.v3lever.pull .v3knob{transform:translateY(72px)}
+.sl-rand{background:linear-gradient(180deg,#ff9ac8,#ff4f9a 50%,#a8195a)!important;border:1px solid #6a0a33!important;color:#fff!important;text-shadow:0 1px 0 rgba(0,0,0,.4);box-shadow:inset 0 2px 0 rgba(255,255,255,.5),0 4px 0 #6a0a33,0 8px 14px rgba(255,79,154,.3)!important}
+/* menú de abajo del lobby */
+.v3nav{position:fixed;left:50%;transform:translateX(-50%);bottom:0;z-index:20;width:min(600px,100%);display:grid;grid-template-columns:repeat(5,1fr);padding:8px 6px calc(8px + env(safe-area-inset-bottom,0px));background:linear-gradient(180deg,#1d0c36,#0b0414);border-top:2px solid var(--goldline);box-shadow:0 -8px 20px rgba(0,0,0,.5)}
+.v3nav button{background:none;border:0;color:#b9a9d6;font:700 11px var(--ui);display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:2px 0;min-height:44px}
+.v3nav button.on{color:#ffcf57}
+.v3nav svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.8}
+.lobby{padding-bottom:84px}
+/* Escuela: Don Dado de maestro */
+.v3coach{display:flex;align-items:flex-end;gap:6px;margin-bottom:-4px}
+.v3coach img{height:90px;filter:drop-shadow(0 6px 10px rgba(0,0,0,.5))}
+.v3coach div{flex:1;margin-bottom:12px;padding:8px 11px;border-radius:16px 16px 16px 4px;background:linear-gradient(180deg,#fff8e6,#f1e3c2);border:2px solid var(--goldline);color:#2a1406;font:600 .86rem/1.25 var(--ui)}
+.esccoach{border-color:rgba(201,149,58,.6);background:rgba(20,8,36,.6)}
+@media (prefers-reduced-motion:reduce){.v3dd,.seat.turn,#slot2 .sl-frame::before{animation:none}}
+
+/* mesas 3D: la mesa pintada va pegada al juego y se mueve con las cartas.
+   border-image: la parte de arriba y la de abajo de la mesa no se deforman; sólo el tramo del medio se alarga si hay más contenido */
+html,body{overflow-x:clip}
+#mesa #game{position:relative}
+#mesa #game::before{content:"";position:absolute;z-index:-1;pointer-events:none;left:50%;width:min(100vw,600px);margin-left:calc(min(100vw,600px) / -2);box-sizing:border-box;
+ top:calc(-60px - min(100vw,600px) * .353);bottom:calc(42px - min(100vw,600px) * .594);
+ border-style:solid;border-color:transparent;border-width:calc(min(100vw,600px) * .75) 0 calc(min(100vw,600px) * .594) 0;
+ border-image:url(mesa-verde.webp) 480 0 380 0 fill stretch;
+}
+#mesa[data-g="pk"] #game::before{border-image-source:url(mesa-azul.webp)}
+#mesa[data-g="rul"] #game::before{border-image-source:url(mesa-roja.webp)}
+.rbub .e{filter:none!important}
+.rbub .rimg{filter:drop-shadow(0 3px 5px rgba(0,0,0,.55))!important}
+#mesa .felt,#mesa[data-g] .felt{background:transparent!important;box-shadow:none!important;border:0!important;margin:0 clamp(18px,9vw,60px)}
+
+/* lobby: arreglos */
+.v3hero{height:318px}
+.v3brand{top:48px}
+.v3hbub{bottom:34px}
+.l2name input{font:700 1.45rem var(--ui);letter-spacing:.01em}
+.l2name input::placeholder{color:rgba(246,239,224,.45)}
+.l2rank{font:600 .82rem var(--ui);letter-spacing:.02em;color:#ffd98a}
+img.l2ci,canvas.pix{image-rendering:auto}
+.l2name.v3ask{border-radius:10px;animation:v3ask 1.4s ease-in-out infinite}
+@keyframes v3ask{0%,100%{box-shadow:0 0 0 0 rgba(255,207,87,0)}50%{box-shadow:0 0 0 3px rgba(255,207,87,.75),0 0 16px rgba(255,207,87,.5)}}
+@media (prefers-reduced-motion:reduce){.l2name.v3ask{animation:none;box-shadow:0 0 0 2px #ffcf57}}
+
+/* apuestas primero: mientras se apuesta no se muestran los lugares vacíos de cartas */
+#game[data-ph="bet"] .bj-dealer,#game[data-ph="bet"] .bac-tbl,#game[data-ph="bet"] .rul-top .wheel{display:none}
+#game[data-ph="bet"] .rul-top{grid-template-columns:1fr;justify-items:center;text-align:center}
+#game[data-ph="bet"] .betcircle{margin-top:4px}
+/* reparto: la carta sale del crupier, gira y cae en su lugar */
+.card.new{animation:deal2 .5s cubic-bezier(.2,.8,.25,1) both;animation-delay:var(--d,0s)}
+.card.side.new{animation-name:dealside}
+@keyframes deal2{0%{opacity:0;transform:translate(0,-120px) rotate(-14deg) scale(.6)}60%{opacity:1}100%{opacity:1;transform:none}}
+@media (prefers-reduced-motion:reduce){.card.new{animation-name:fadein}}
 </style>
 
 <div id="l2bgimg" aria-hidden="true"></div><canvas id="l2bg" aria-hidden="true"></canvas>
@@ -471,16 +626,15 @@ img.l2mini{width:15px;height:15px;vertical-align:-3px;margin-right:3px;image-ren
 <div class="app">
   <section class="lobby" id="lobby">
     <div class="l2sign" id="l2sign"><canvas id="signcv" class="pix" aria-label="Mesa de Cuatro"></canvas><div class="l2signsub">♠ CASINO ENTRE AMIGOS ♦</div>
-      <button class="l2gear" id="gearBtn" aria-label="Ajustes">⚙️</button></div>
-
-    <div class="l2offbar" id="offBar" hidden><span id="offBarT">📴 Modo offline<small>Juegas contra la casa · estas fichas son aparte</small></span><button class="btn sm" id="offBack">Volver a online</button></div>
-
-    <div class="l2panel" id="boardBox">
-      <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><h2>🏆 Tablero</h2>
-        <div class="seg" id="boardSort"><button data-sort="chips" class="on">Fichas</button><button data-sort="net">Ganancia</button></div></div>
-      <div id="board"><div class="empty">Cargando…</div></div>
+      </div>
+    <div class="v3hero" id="v3hero">
+      <div class="v3city" aria-hidden="true"></div>
+      <div class="v3top"><button class="v3rnd" id="gearBtn" aria-label="Ajustes"><svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><circle cx="12" cy="12" r="3.2"/><path d="M12 2.5v3M12 18.5v3M2.5 12h3M18.5 12h3M5.2 5.2l2.1 2.1M16.7 16.7l2.1 2.1M5.2 18.8l2.1-2.1M16.7 7.3l2.1-2.1"/></svg></button></div>
+      <div class="v3brand"><svg class="v3crown" viewBox="0 0 24 24" aria-hidden="true"><path d="M2 18 4 7l5 5 3-7 3 7 5-5 2 11z"/></svg><b class="v3title">MAGIC<br>CASINO</b><span class="v3sub">Casino entre amigos</span></div>
+      <img class="v3dd" src="dd-normal.webp" alt="Don Dado, el crupier">
+      <div class="v3hbub" id="ddHello"><b>DON DADO</b><span id="ddHelloT">¡Bienvenido! La casa abre cuando tú digas.</span></div>
     </div>
-
+    <div class="l2offbar" id="offBar" hidden><img src="dd-shrug.webp" alt="" class="v3offimg"><span id="offBarT">📴 Modo offline<small>Juegas contra la casa · estas fichas son aparte</small></span><button class="btn sm" id="offBack">Volver a online</button></div>
     <div class="l2panel l2me">
       <div class="l2metop">
         <div class="l2mechip"><span id="myChip" class="l2chip"></span><button class="btn sm" id="chipBtn">🎨 Mi ficha</button></div>
@@ -493,19 +647,10 @@ img.l2mini{width:15px;height:15px;vertical-align:-3px;margin-right:3px;image-ren
       <div class="l2stats" id="myStats"></div>
       <div id="resumeBox" hidden><button class="btn go l2resume" id="resGo">↩ Volver a “<span id="resName">—</span>”<small id="resInfo"></small></button></div>
     </div>
-
-    <div class="l2panel">
-      <div class="row" style="justify-content:space-between"><h2>Mesas abiertas</h2><span class="note" id="pushMini"></span></div>
-      <div class="mlist" id="mlist"><div class="empty">Buscando mesas…</div></div>
-      <div class="raise">
-        <input id="codeIn" maxlength="4" placeholder="¿Tienes código? Ej. K7QM" autocomplete="off" style="text-transform:uppercase">
-        <button class="btn" id="codeGo">Entrar</button>
-      </div>
-    </div>
-
     <div class="l2panel" id="slot2">
+      <div class="v3slhead"><img src="dd-senala.webp" alt="" class="v3slimg"><div class="v3slbub"><b>DON DADO</b>¿Qué jugamos? Gira las ruedas o jala la palanca.</div></div>
       <div class="sl-title"><b>MESA NUEVA</b></div>
-      <div id="slotReels"></div>
+      <div class="v3cab"><div id="slotReels"></div><button class="v3lever" id="s2Lever" aria-label="Jalar la palanca: mesa al azar"><i class="v3stick"></i><i class="v3knob"></i></button></div>
       <div class="sl-sum"><b id="s2T"></b><button class="l2link" id="s2Edit">“<span id="s2N"></span>” ✏️ cambiar nombre</button>
         <input id="s2Name" maxlength="28" placeholder="Nombre de tu mesa" autocomplete="off" hidden></div>
       <div class="sl-acts"><button class="btn sl-rand" id="s2Rand">🎲 Aleatorio</button><button class="btn go" id="create">Confirmar mesa</button></div>
@@ -516,7 +661,19 @@ img.l2mini{width:15px;height:15px;vertical-align:-3px;margin-right:3px;image-ren
       <div class="quick" id="buyQuick"><button data-b="5000">5,000</button><button data-b="10000" class="on">10,000</button><button data-b="50000">50,000</button><button data-b="100000">100,000</button></div>
       <div class="gpick" id="gpick"><button data-g="bac" class="on">B</button><button data-g="rul">R</button><button data-g="bj">21</button><button data-g="pk">P</button></div>
     </div>
-
+    <div class="l2panel" id="boardBox">
+      <div class="row" style="justify-content:space-between;flex-wrap:nowrap"><h2>🏆 Tablero</h2>
+        <div class="seg" id="boardSort"><button data-sort="chips" class="on">Fichas</button><button data-sort="net">Ganancia</button></div></div>
+      <div id="board"><div class="empty">Cargando…</div></div>
+    </div>
+    <div class="l2panel" id="mesasBox">
+      <div class="row" style="justify-content:space-between"><h2>Mesas abiertas</h2><span class="note" id="pushMini"></span></div>
+      <div class="mlist" id="mlist"><div class="empty">Buscando mesas…</div></div>
+      <div class="raise">
+        <input id="codeIn" maxlength="4" placeholder="¿Tienes código? Ej. K7QM" autocomplete="off" style="text-transform:uppercase">
+        <button class="btn" id="codeGo">Entrar</button>
+      </div>
+    </div>
     <div class="l2panel">
       <h2>Juegos</h2>
       <div class="l2games" id="l2games">
@@ -528,7 +685,6 @@ img.l2mini{width:15px;height:15px;vertical-align:-3px;margin-right:3px;image-ren
       </div>
       <p class="note" id="solCardInfo">Para jugar solo, sin apostar.</p>
     </div>
-
     <div class="l2panel" id="escBox">
       <button class="btn" id="escBtn">🎓 Escuela: aprende y practica</button>
       <p class="note">Coach de blackjack, póker guiado, y reglas de baccarat y ruleta. Fichas de práctica: no toca tu saldo. Funciona sin internet.</p>
@@ -537,6 +693,13 @@ img.l2mini{width:15px;height:15px;vertical-align:-3px;margin-right:3px;image-ren
       <button class="btn" id="offBtn">📴 Jugar offline</button>
       <p class="note" id="offNote">Blackjack, ruleta y baccarat contra la casa, sin internet. El póker sí necesita internet.</p>
     </div>
+    <nav class="v3nav" id="v3nav" aria-label="Menú">
+      <button data-nav="top" class="on"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 11 12 4l9 7v9h-6v-6H9v6H3z"/></svg>Inicio</button>
+      <button data-nav="mesas"><svg viewBox="0 0 24 24" aria-hidden="true"><ellipse cx="12" cy="10" rx="9" ry="5"/><path d="M3 10v4c0 3 4 5 9 5s9-2 9-5v-4"/></svg>Mesas</button>
+      <button data-nav="esc"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M2 9l10-5 10 5-10 5z"/><path d="M6 11v5c3 2 9 2 12 0v-5"/></svg>Escuela</button>
+      <button data-nav="board"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 21h8M12 17v4M7 4h10v5a5 5 0 0 1-10 0z"/><path d="M7 6H4a3 3 0 0 0 3 4M17 6h3a3 3 0 0 1-3 4"/></svg>Tablero</button>
+      <button data-nav="ficha"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><circle cx="12" cy="12" r="4"/><path d="M12 3v3M12 18v3M3 12h3M18 12h3"/></svg>Mi ficha</button>
+    </nav>
   </section>
 
   <div class="l2sheet" id="setSheet" hidden><div class="l2sh">
@@ -587,6 +750,7 @@ img.l2mini{width:15px;height:15px;vertical-align:-3px;margin-right:3px;image-ren
       <div class="mname"><b>Escuela</b><span class="code">Práctica · sin apostar de verdad</span></div>
       <span class="conn">🎓</span>
     </div>
+    <div class="v3coach"><img src="dd-maestro.webp" alt="Don Dado con monóculo"><div><b>DON DADO · COACH</b>Aquí se vale equivocarse: las fichas son de práctica.</div></div>
     <div class="tabs" id="escTabs"><button data-etab="bj">Blackjack</button><button data-etab="pk">Póker</button><button data-etab="bac">Baccarat</button><button data-etab="rul">Ruleta</button></div>
     <div class="escbody" id="escBody"></div>
   </section>

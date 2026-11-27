@@ -1,7 +1,7 @@
-const CACHE="mesa4-2.3.1";
-const FILES=["./", "index.html", "casino.js", "adapter.js", "config.js", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png", "firebase-app-compat.js", "firebase-auth-compat.js", "firebase-firestore-compat.js", "push.js", "r-jaja.png", "r-ctm.png", "r-faah.png", "r-dealer.png", "r-ride.png", "fondo.jpg", "emblemas.png"];
+const CACHE="dd4-1.5.2";   // app nueva (Don Dado); vive junto a la versión anterior
+const FILES=["./", "index.html", "casino.js", "adapter.js", "config.js", "manifest.webmanifest", "icon-180.png", "icon-192.png", "icon-512.png", "firebase-app-compat.js", "firebase-auth-compat.js", "firebase-firestore-compat.js", "push.js", "r-jaja.png", "r-ctm.png", "r-faah.png", "r-dealer.png", "r-ride.png", "fondo.jpg", "emblemas.png", "ficha.mp3", "dd-normal.webp","mesa-verde.webp","mesa-azul.webp","mesa-roja.webp", "dd-festeja.webp", "dd-shrug.webp", "dd-guino.webp", "dd-maestro.webp", "dd-senala.webp"];
 self.addEventListener("install",e=>{ e.waitUntil(caches.open(CACHE).then(c=>c.addAll(FILES)).then(()=>self.skipWaiting())); });
-self.addEventListener("activate",e=>{ e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x!==CACHE&&!/-fonts$/.test(x)).map(x=>caches.delete(x)))).then(()=>self.clients.claim())); });
+self.addEventListener("activate",e=>{ e.waitUntil(caches.keys().then(k=>Promise.all(k.filter(x=>x.startsWith("dd4-")&&x!==CACHE&&!/-fonts$/.test(x)).map(x=>caches.delete(x)))).then(()=>self.clients.claim())); });
 // Abrir rápido aunque el internet esté lento: usa lo guardado si la red tarda más de 2.5 s,
 // y aprovecha la respuesta de internet (cuando llegue) para dejar lista la versión nueva.
 const NET_WAIT=2500;
